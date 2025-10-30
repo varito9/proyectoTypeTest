@@ -13,7 +13,7 @@
 
   <!-- vista de joc -->
    <div v-else-if="vista === 'game'">
-
+    
    </div>
 
   <!-- vista de endgame-->
