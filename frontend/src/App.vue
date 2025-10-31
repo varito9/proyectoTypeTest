@@ -3,7 +3,9 @@
   <div v-if="vista === 'preGame'">
     <!-- Un cop entres i no tens nom : Nickname-->
     <div v-if="!isConnected">
-      <senseConnexio />
+      <input type="text" v-model="jugador" placeholder="Introdueix nom" />
+      <button @click="sendNickname(jugador)">Entra</button>
+      <p>Type Racer Royale</p>
     </div>
     <!-- Un cop introdueixes el nickname: Lobby-->
     <div v-else>
@@ -39,52 +41,64 @@
 <script setup>
 //imports && exports
 import { ref } from 'vue'
+import { io } from 'socket.io-client'
 import RankingComponent from './components/RankingComponent.vue'
-import senseConnexio from './components/PreGame/senseConnexio.vue'
 import viewLobby from './components/PreGame/lobby/viewLobby.vue'
-import GameEngine from './components/Game/GameEngine.vue';
+import GameEngine from './components/Game/GameEngine.vue'
 import TempsRestant from './components/Game/TempsRestant.vue'
 
 //variables
-var socket = senseConnexio.socket
+var socket = null
 
 const vista = ref('preGame') //preGame, game, endGame
 const isConnected = ref(socket !== null) //Depèn de si connecta o no
-const isSpectator = ref(jugador.value.estat === 'espectador')
-const jugador = ref({ name: 'name' }) //rol: 'ready' | 'notReady'
+const jugador = ref({ name: 'name', estat: '' }) //rol: 'ready' | 'notReady'
 const jugadors = ref([])
 const tempsRestant = ref(-1)
+const isSpectator = ref(jugador.value.estat === 'espectador')
 
-const timerInstance = setInterval(() => {
-  if (tempsRestant.value > 0) {
-    tempsRestant.value--
-  } else {
-    acabarPartida()
-  }
-}, 1000)
 //sockets
 
-socket.on('setPlayerList', (data) => {
-  jugadors.value = data.playerList
-  if (jugador.value == { name: 'name' }) {
-    jugador.value = data.playerList[data.playerList.length - 1]
-  }
-})
+function tryConn() {
+  socket = io('http://localhost:3001')
 
-socket.on('gameStart', (temps) => {
-  vista.value = 'game'
-  iniciarComptador(temps)
-})
+  socket.on('setPlayerList', (data) => {
+    jugadors.value = data.playerList
+    if (jugador.value == { name: 'name' }) {
+      jugador.value = data.playerList[data.playerList.length - 1]
+    }
+  })
+
+  socket.on('gameStart', (temps) => {
+    vista.value = 'game'
+    iniciarComptador(temps)
+  })
+}
+
+function sendNickname(nickname) {
+  tryConn()
+  socket.emit('SendNickname', nickname)
+}
 
 function iniciarComptador(tempsInici) {
   tempsRestant.value = tempsInici
-  timerInstance()
-}
 
-function acabarPartida() {
-  clearInterval(timerInstance)
-  socket.emit('partidaAcabada')
-  vista.value = 'endGame'
+  function timerInstance() {
+    setInterval(() => {
+      if (tempsRestant.value > 0) {
+        tempsRestant.value--
+      } else {
+        acabarPartida()
+      }
+    }, 1000)
+  }
+
+  function acabarPartida() {
+    clearInterval(timerInstance)
+    socket.emit('partidaAcabada')
+    vista.value = 'endGame'
+  }
+  timerInstance()
 }
 </script>
 
