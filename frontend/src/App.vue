@@ -18,7 +18,7 @@
 
   <!-- vista de endgame-->
    <div v-else-if="vista === 'endGame'">
-
+    <Ranking />
    </div>
 
 </template>
@@ -28,6 +28,7 @@
   import { ref } from 'vue';
   import senseConnexio from './components/PreGame/senseConnexio.vue';
   import viewLobby from './components/PreGame/lobby/viewLobby.vue';
+import Ranking from './components/Ranking.vue';
 
   //import GameEngine from './components/Game/GameEngine.vue';
 

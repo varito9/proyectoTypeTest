@@ -2,7 +2,6 @@
     <input type="text" v-model="jugador" placeholder="Introdueix nom"/>
     <button @click="sendNickname(jugador)">Entra</button>
     <p>Type Racer Royale</p>
-
 </template>
 
 <script setup>
