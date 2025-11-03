@@ -77,7 +77,7 @@ function tryConn() {
 
 function sendNickname(nickname) {
   tryConn()
-  socket.emit('SendNickname', nickname)
+  if (socket !== null) socket.emit('SendNickname', nickname)
 }
 
 function iniciarComptador(tempsInici) {
@@ -94,9 +94,11 @@ function iniciarComptador(tempsInici) {
   }
 
   function acabarPartida() {
-    clearInterval(timerInstance)
-    socket.emit('partidaAcabada')
-    vista.value = 'endGame'
+    if (socket !== null) {
+      clearInterval(timerInstance)
+      socket.emit('partidaAcabada')
+      vista.value = 'endGame'
+    }
   }
   timerInstance()
 }
