@@ -6,7 +6,7 @@
 
 <script setup>
 // CANVI: Importem 'onMounted' i 'onUnmounted'
-import { ref, defineProps, defineEmits, onMounted, onUnmounted } from 'vue';
+import { ref, onMounted, onUnmounted } from 'vue';
 
 // 1. Definim les dades que rebem del pare (App.vue)
 const props = defineProps({
