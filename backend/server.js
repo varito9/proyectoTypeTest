@@ -62,19 +62,15 @@ io.on("connection", (socket) => {
       return;
     }
 
-    let _role = "player";
-    let role = "spectator";
+    let role = "player";
     if (players.length === 0) {
       role = "admin";
     }
 
     const player = {
       // Player Info
-      id: _id,
-      socketId: socket.id,
-      name: _name,
-      role: _role, // enum: 'admin', 'player', 'spectator'
       id: id,
+      socketId: socket.id,
       name: name,
       role: role, // enum: 'admin', 'player', 'spectator'
       // States
