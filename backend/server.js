@@ -1,3 +1,4 @@
+// REQUIREMENTS
 const { error } = require("console");
 const express = require("express");
 const http = require("http");
@@ -8,194 +9,200 @@ const app = express();
 const server = http.createServer(app);
 const io = new Server(server, { cors: { origin: "*" } });
 
-app.get("/", (req, res) => res.send("Backend Type Racer Royale listo 🏁"));
+app.get("/", (req, res) => res.send("Type Racer Royale backend ready 🏁"));
 
-let jugadors = [];
-let partidaEnCurs = false;
-let configuracioPartida = {
-  idioma: "cat",
-  temps: 60,
+// DATA
+let players = [];
+let beingPlayed = false;
+let gameConfig = {
+  language: "cat",
+  time: 60,
 };
-let temporitzador = null;
+let timer = null;
 
-// Funció per enviar la llista de jugadors a tots els clients connectats
+// Function to send the player list to all connected clients
 function broadcastPlayerList() {
-  io.emit("setPlayerList", jugadors);
+  io.emit("setPlayerList", players);
 }
 
-// Funció per eliminar un jugador de la partida (Encara no s'utilitza)
-function eliminarJugador(idJugador) {
-  if (!partidaEnCurs) return;
+// Function to remove a player from the game (not used yet)
+function deletePlayer(playerId) {
+  if (!beingPlayed) return;
 
-  const jugador = jugadors.find((j) => j.id === idJugador);
-  if (!jugador) return;
+  const deletingPlayer = players.find((player) => player.id === playerId);
+  if (!deletingPlayer) return;
 
-  jugador.rol = "espectador";
+  deletingPlayer.role = "spectator";
   broadcastPlayerList();
 }
 
-// Funció per acabar la partida i enviar la classificació final
-function acabarPartida() {
-  partidaEnCurs = false;
+// Function to end the game and send the final ranking
+// TODO: Add error-based ranking
+function endGame() {
+  beingPlayed = false;
 
-  const classificacio = [...jugadors]
-    .filter((j) => j.rol === "jugador")
-    .sort((a, b) => b.puntuacio - a.puntuacio);
+  const ranking = [...players]
+    .filter((player) => player.role === "player")
+    .sort((a, b) => b.points - a.points);
 
-  io.emit("PartidaFinalitzada", { classificacio });
-  clearTimeout(temporitzador);
+  io.emit("gameFinished", { ranking });
+  clearTimeout(timer);
 }
 
-//Començen amb la connexió del servidor
+// Start listening for server connections
 io.on("connection", (socket) => {
-  console.log("Jugador conectat");
+  console.log("Player connected");
 
-  // Quan un usuari ens envia el seu nom i id
-  socket.on("setPlayerName", ({ name, id }) => {
-    if (!name || id === undefined) return;
+  // When a user sends their name and ID
+  socket.on("setPlayerName", ({ _name, _id }) => {
+    if (!_name || _id === undefined) return;
 
-    const jugadorsActius = jugadors.filter((j) => j.rol === "espectador");
-    if (jugadorsActius.length >= 6) {
-      socket.emit("lobbyLleno", { mensaje: "El lobby ya está lleno." });
+    const activePlayers = players.filter((player) => player.role !== "spectator");
+    if (activePlayers.length >= 6) {
+      socket.emit("gameFull", { message: "The lobby is already full." });
       return;
     }
 
-    const admin = jugadors.some((j) => j.admin);
+    let _role = "spectator";
+    if (players.length === 0) {
+      _role = "admin";
+    }
 
-    const jugador = {
-      id, // id enviat des del frontend
-      name: name,
-      preparat: false,
-      admin: !admin, // el primero en unirse será admin
-      rol: partidaEnCurs ? "espectador" : "jugador",
-      puntuacio: 0,
+    const player = {
+      // Player Info
+      id: _id,
+      name: _name,
+      role: _role, // enum: 'admin', 'player', 'spectator'
+      // States
+      isReady: false,
+      // Game Stats
+      points: 0,
       errors: 0,
     };
 
-    jugadors.push(jugador);
+    players.push(player).sort((a, b) => b.id - a.id);
 
-    console.log(`L'usuari ${name}  s'ha unit amb id ${id}`);
-    broadcastPlayerList(); // Enviem la llista actualitzada a tothom
+    console.log(`User ${player.name} joined with id ${player.id}`);
+    broadcastPlayerList(); // Send updated list to everyone
   });
 
-  //escoltem l'ordre de quan l'usuari li dona a preparat
-  socket.on("setPreparat", ({ id }) => {
-    const jugador = jugadors.find((j) => j.id === id);
-    if (!jugador) return;
+  // Listen when the user marks themselves as ready
+  socket.on("setIsReady", ({ id }) => {
+    const changingPlayer = players.find((player) => player.id === id);
+    if (!changingPlayer) return;
 
-    jugador.preparat = !jugador.preparat;
+    changingPlayer.isReady = !changingPlayer.isReady;
+    players.filter((player) => player.id === changingPlayer.id);
+    players.push(changingPlayer).sort((a, b) => b.id - a.id);
 
-    jugador.rol = jugador.preparat && !partidaEnCurs ? "jugador" : "espectador";
-
-    console.log(`Jugador ${jugador.name} preparat: ${jugador.preparat}`);
+    console.log(`Player ${changingPlayer.name} ready: ${changingPlayer.isReady}`);
     broadcastPlayerList();
   });
 
-  //Admin pot escollir la configuració de la partida al lobby
-  socket.on("configurarPartida", ({ id, novaConfig }) => {
-    const admin = jugadors.find((j) => j.id === id && j.admin);
+  // Admin can configure the game in the lobby
+  socket.on("configGame", ({ id, newConfig }) => {
+    const admin = players.find((player) => player.id === id && player.role === "admin");
     if (!admin) return;
 
-    configuracioPartida = { ...configuracioPartida, ...novaConfig };
-    io.emit("configuracioActualizada", configuracioPartida);
+    gameConfig = newConfig;
+    io.emit("gameConfigured", gameConfig);
   });
 
-  //Escolta quan expulsem al jugador que te el idJugador
-  socket.on("expulsarJugador", ({ adminId, idJugador }) => {
-    const admin = jugadors.find((j) => j.id === adminId && j.admin);
+  // Listen when a player is expelled by their playerId
+  socket.on("kickPlayer", ({ adminId, playerId }) => {
+    const admin = players.find((p) => p.id === adminId && p.role === "admin");
     if (!admin) return;
 
-    const expulsat = jugadors.find((j) => j.id === idJugador);
-    if (!expulsat) return;
+    const kickedPlayer = players.find((p) => p.id === playerId);
+    if (!kickedPlayer) return;
 
-    // Notifiquem al frontend que ha estat expulsat
-    io.emit("expulsat", { id: idJugador });
+    // Notify the frontend that the player has been kicked
+    io.emit("playerKicked", { id: playerId });
 
-    jugadors = jugadors.filter((j) => j.id !== idJugador);
-    console.log(`Jugador ${expulsat.name} ha estat expulsat per l'admin`);
+    players = players.filter((p) => p.id !== playerId);
+    console.log(`Player ${kickedPlayer.name} has been kicked by the admin`);
     broadcastPlayerList();
   });
 
-  //Transferir l'admin a l'usuari escollit
-  socket.on("transferirAdmin", ({ adminId, idNuevoAdmin }) => {
-    const adminActual = jugadors.find((j) => j.id === adminId && j.admin);
-    const adminNuevo = jugadors.find((j) => j.id === idNuevoAdmin);
+  // Transfer admin rights to a selected user
+  socket.on("transferAdmin", ({ adminId, newAdminId }) => {
+    const currentAdmin = players.find((p) => p.id === adminId && p.role === "admin");
+    const newAdmin = players.find((p) => p.id === newAdminId);
 
-    if (!adminActual || !adminNuevo) return;
+    if (!currentAdmin || !newAdmin) return;
 
-    adminActual.admin = false;
+    currentAdmin.role = "player";
+    newAdmin.role = "admin";
 
-    adminNuevo.admin = true;
-
-    console.log(
-      `${adminActual.name} ha transferit l'admin a ${adminNuevo.name}`
-    );
+    console.log(`${currentAdmin.name} has transferred admin rights to ${newAdmin.name}`);
     broadcastPlayerList();
   });
 
-  // Escolta quan l'admin comença el joc i posa als usuaris no preparats com espectadors
-  socket.on("IniciarJoc", ({ id }) => {
-    const admin = jugadors.find((j) => j.id === id && j.admin);
+  // Listen when the admin starts the game and set unready users as spectators
+  socket.on("startGame", ({ id }) => {
+    const admin = players.find((p) => p.id === id && p.role === "admin");
     if (!admin) return;
 
-    partidaEnCurs = true;
+    beingPlayed = true;
 
-    jugadors.forEach((j) => {
-      if (!j.preparat) {
-        j.rol = "espectador";
+    players.forEach((p) => {
+      if (!p.isReady) {
+        p.role = "spectator";
       }
     });
-    io.emit("JocIniciat", {
-      jugadores: jugadors,
-      temps: configuracioPartida.temps,
+
+    io.emit("gameStarted", {
+      players,
+      time: gameConfig.time,
     });
 
-    temporitzador = setTimeout(() => {
-      acabarPartida();
-    }, configuracioPartida.temps * 1000);
+    timer = setTimeout(() => {
+      endGame();
+    }, gameConfig.time * 1000);
   });
 
-  //socket que escolta els punts sumats al jugador
-  socket.on("sumarPunts", ({ id }) => {
-    const jugador = jugadors.find((j) => j.id === id);
-    if (!jugador || jugador.rol !== "jugador") return;
+  // Listen when points are added to a player
+  socket.on("addPoints", ({ id }) => {
+    const player = players.find((p) => p.id === id);
+    if (!player || player.role !== "player") return;
 
-    jugador.puntuacio++;
+    player.points++;
   });
 
-  socket.on("sumarErrors", ({ id }) => {
-    const jugador = jugadors.find((j) => j.id === id);
-    if (!jugador || jugador.rol !== "jugador") return;
+  // Listen when errors are added to a player
+  socket.on("addErrors", ({ id }) => {
+    const player = players.find((p) => p.id === id);
+    if (!player || player.role !== "player") return;
 
-    jugador.errors++;
+    player.errors++;
   });
 
-  //En cas de l'usuari premi el boto de sortir es desconecta
-  socket.on("sortir", ({ id }) => {
-    const jugador = jugadors.find((j) => j.id === id);
-    if (!jugador) return;
+  // Listen when a user presses the exit button and disconnects
+  socket.on("leaveGame", ({ id }) => {
+    const player = players.find((p) => p.id === id);
+    if (!player) return;
 
-    if (jugador.admin) {
-      const nouAdmin = jugadors.find((j) => j.id !== id);
-      if (nouAdmin) {
-        nouAdmin.admin = true;
+    if (player.role === "admin") {
+      const newAdmin = players.find((p) => p.id !== id);
+      if (newAdmin) {
+        newAdmin.role = "admin";
       }
     }
 
-    jugadors = jugadors.filter((j) => j.id !== id);
+    players = players.filter((p) => p.id !== id);
 
     broadcastPlayerList();
     socket.disconnect();
   });
 
-  //Escoltem quan l'usuari vol tornar a jugar després d'una partida
-  socket.on("tornarAJugar", ({ id }) => {
-    const jugador = jugadors.find((j) => j.id === id);
-    if (!jugador) return;
+  // Listen when a user wants to play again after a match
+  socket.on("playAgain", ({ id }) => {
+    const player = players.find((p) => p.id === id);
+    if (!player) return;
 
-    jugador.preparat = false;
-    jugador.puntuacio = 0;
-    jugador.rol = "jugador";
+    player.isReady = false;
+    player.points = 0;
+    player.role = "player";
     broadcastPlayerList();
   });
 });
