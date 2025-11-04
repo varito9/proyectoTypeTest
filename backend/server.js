@@ -57,14 +57,12 @@ io.on("connection", (socket) => {
   socket.on("setPlayerName", ({ name, id }) => {
     if (!name || id === undefined) return;
 
-    const activePlayers = players.filter(
-      (player) => player.role !== "spectator"
-    );
-    if (activePlayers.length >= 6) {
+    if (players.length >= 6) {
       socket.emit("gameFull", { message: "The lobby is already full." });
       return;
     }
 
+    let _role = "player";
     let role = "spectator";
     if (players.length === 0) {
       role = "admin";
@@ -72,6 +70,10 @@ io.on("connection", (socket) => {
 
     const player = {
       // Player Info
+      id: _id,
+      socketId: socket.id,
+      name: _name,
+      role: _role, // enum: 'admin', 'player', 'spectator'
       id: id,
       name: name,
       role: role, // enum: 'admin', 'player', 'spectator'
@@ -167,6 +169,7 @@ io.on("connection", (socket) => {
       players,
       time: gameConfig.time,
     });
+    broadcastPlayerList();
 
     timer = setTimeout(() => {
       endGame();
@@ -189,22 +192,24 @@ io.on("connection", (socket) => {
     player.errors++;
   });
 
-  // Listen when a user presses the exit button and disconnects
-  socket.on("leaveGame", ({ id }) => {
-    const player = players.find((p) => p.id === id);
+  socket.on("disconnect", () => {
+    const player = players.find((p) => p.socketId === socket.id);
     if (!player) return;
 
+    console.log(`Player ${player.name} disconnected`);
+
     if (player.role === "admin") {
-      const newAdmin = players.find((p) => p.role === "player");
+      const newAdmin = players.find((p) => p.id !== player.id);
       if (newAdmin) {
         newAdmin.role = "admin";
+        io.to(newAdmin.socketId).emit("youAreNowAdmin"); // opcional
+
+        console.log(`new admin ${newAdmin.name}`);
       }
     }
-
-    players = players.filter((p) => p.id !== id);
-
+    // Lógica de reasignar admin y eliminar jugador
+    players = players.filter((p) => p.socketId !== socket.id);
     broadcastPlayerList();
-    socket.disconnect();
   });
 
   // Listen when a user wants to play again after a match
