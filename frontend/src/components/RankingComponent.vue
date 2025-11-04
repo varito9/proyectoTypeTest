@@ -18,8 +18,8 @@
 </template>
 
 <script setup>
-defineProps(['llistaJug']);
+const props = defineProps(['llistaJug']);
 
-const llistatJugadors = this.props.llistaJug;
+const llistatJugadors = props.llistaJug || [];
 
 </script>

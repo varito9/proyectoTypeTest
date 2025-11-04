@@ -8,31 +8,36 @@
             <button v-if="player.id > 0" @click="deletePlayer(player.id)">
                 <!--Logo creu-->
             </button>
-            <div class="estat" v-bind:class="player.state === 'ready' ? 'ready' : 'notReady'"></div>
+            <div class="estat" v-bind:class="player.preparat === true ? 'ready' : 'notReady'"></div>
         </li>
     </ul>
 		<!-- Llista per jugador / espectador -->
     <ul v-else>
-        <li v-for="player in jugadors" :key="player.id">
+        <li v-for="player in llistaJugadors" :key="player.id">
             {{ player.name }}
-            <div class="estat" v-bind:class="player.state === 'ready' ? 'ready' : 'notReady'"></div>
+            <div class="estat" v-bind:class="player.preparat === true ? 'ready' : 'notReady'"></div>
         </li>
     </ul>
 </template>
 <script setup>
-defineProps(['socketC', 'llistaJug', 'isAdmin'])
+const props = defineProps(['socketC', 'llistaJug', 'isAdmin', 'jugador'])
 
 //Variables
-const adminRol = this.props.isAdmin;
-const llistaJugadors = this.props.llistaJugadors;
-const socket = this.props.socketC;
+const adminRol = props.isAdmin;
+const llistaJugadors = props.llistaJug || [];
+const socket = props.socketC;
+const jugadorClient = props.jugador || {};
 
 //Functions
 function setAdmin(id){
-    socket.emit('transferirAdmin', id);
+  if (socket && props.isAdmin && jugadorClient?.id) {
+    socket.emit('transferirAdmin', { adminId: jugadorClient.id, idNuevoAdmin: id });
   }
+}
 
-  function deletePlayer(id){
-    socket.emit('expulsarJug', id);
+function deletePlayer(id){
+  if (socket && props.isAdmin && jugadorClient?.id) {
+    socket.emit('expulsarJugador', { adminId: jugadorClient.id, idJugador: id });
   }
+}
 </script>

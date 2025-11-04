@@ -41,7 +41,7 @@
 
 <script setup>
 // Imports necessaris per a aquest component
-import { ref, reactive, defineProps } from 'vue'
+import { ref, reactive } from 'vue'
 
 // 1. DEFINIM LES PROPS (dades que rebem del component pare: App.vue)
 const props = defineProps({

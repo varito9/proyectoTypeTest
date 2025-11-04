@@ -3,8 +3,8 @@
   <div v-if="vista === 'preGame'">
     <!-- Un cop entres i no tens nom : Nickname-->
     <div v-if="!isConnected">
-      <input type="text" v-model="jugador" placeholder="Introdueix nom" />
-      <button @click="sendNickname(jugador)">Entra</button>
+      <input type="text" v-model="jugador.name" placeholder="Introdueix nom" />
+      <button @click="sendNickname(jugador.name)">Entra</button>
       <p>Type Racer Royale</p>
     </div>
     <!-- Un cop introdueixes el nickname: Lobby-->
@@ -51,8 +51,8 @@ import TempsRestant from './components/Game/TempsRestant.vue'
 var socket = null
 
 const vista = ref('preGame') //preGame, game, endGame
-const isConnected = ref(socket !== null) //Depèn de si connecta o no
-const jugador = ref({ name: 'name', estat: '' }) //rol: 'ready' | 'notReady'
+const isConnected = ref(false) //Depèn de si connecta o no
+const jugador = ref({ name: '', id: null, estat: '', rol: '' }) //rol: 'ready' | 'notReady'
 const jugadors = ref([])
 const tempsRestant = ref(-1)
 const isSpectator = ref(jugador.value.estat === 'espectador')
@@ -60,24 +60,65 @@ const isSpectator = ref(jugador.value.estat === 'espectador')
 //sockets
 
 function tryConn() {
+  if (socket !== null && socket.connected) return // Ja està connectat
+  
   socket = io('http://localhost:3001')
 
-  socket.on('setPlayerList', (data) => {
-    jugadors.value = data.playerList
-    if (jugador.value == { name: 'name' }) {
-      jugador.value = data.playerList[data.playerList.length - 1]
+  socket.on('connect', () => {
+    console.log('Socket connectat')
+  })
+
+  socket.on('setPlayerList', (playerList) => {
+    // El backend envia l'array directament: io.emit("setPlayerList", jugadors)
+    jugadors.value = Array.isArray(playerList) ? playerList : []
+    
+    // Trobar el jugador actual per id
+    if (jugador.value.id !== null) {
+      const jugadorActual = jugadors.value.find(j => j.id === jugador.value.id)
+      if (jugadorActual) {
+        jugador.value = jugadorActual
+      }
+    } else {
+      // Si no tenim id, agafar l'últim jugador (el que s'acaba d'afegir)
+      if (jugadors.value.length > 0) {
+        jugador.value = jugadors.value[jugadors.value.length - 1]
+      }
+    }
+    
+    // Actualitzar isConnected quan rebem la llista de jugadors i tenim un jugador amb id
+    if (!isConnected.value && jugador.value.id !== null && jugador.value.name !== '') {
+      isConnected.value = true
     }
   })
 
-  socket.on('gameStart', (temps) => {
+  socket.on('JocIniciat', (data) => {
     vista.value = 'game'
-    iniciarComptador(temps)
+    if (data.temps) {
+      iniciarComptador(data.temps)
+    }
   })
 }
 
 function sendNickname(nickname) {
+  if (!nickname || nickname.trim() === '') return
+  
+  // Generar un ID únic per al jugador abans de connectar
+  const playerId = jugador.value.id || Date.now()
+  jugador.value.id = playerId
+  jugador.value.name = nickname.trim()
+  
   tryConn()
-  if (socket !== null) socket.emit('SendNickname', nickname)
+  
+  // Esperar a que el socket estigui connectat abans d'enviar
+  if (socket && socket.connected) {
+    // El backend espera 'setPlayerName' amb { name, id }
+    socket.emit('setPlayerName', { name: nickname.trim(), id: playerId })
+  } else {
+    // Si no està connectat, esperar a la connexió
+    socket.on('connect', () => {
+      socket.emit('setPlayerName', { name: nickname.trim(), id: playerId })
+    })
+  }
 }
 
 function iniciarComptador(tempsInici) {
