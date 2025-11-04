@@ -1,6 +1,6 @@
 <template>
-    <ul v-if="adminRol">
-        <li v-for="player in llistaJugadors" :key="player.id">
+    <ul v-if="props.isAdmin">
+        <li v-for="player in props.llistaJug" :key="player.id">
             <button v-if="player.id > 0" @click="setAdmin(player.id)">
                 <!--Logo estrella buit-->
             </button>
@@ -13,7 +13,7 @@
     </ul>
 		<!-- Llista per jugador / espectador -->
     <ul v-else>
-        <li v-for="player in llistaJugadors" :key="player.id">
+        <li v-for="player in props.llistaJug" :key="player.id">
             {{ player.name }}
             <div class="estat" v-bind:class="player.preparat === true ? 'ready' : 'notReady'"></div>
         </li>
@@ -23,21 +23,18 @@
 const props = defineProps(['socketC', 'llistaJug', 'isAdmin', 'jugador'])
 
 //Variables
-const adminRol = props.isAdmin;
-const llistaJugadors = props.llistaJug || [];
 const socket = props.socketC;
-const jugadorClient = props.jugador || {};
 
 //Functions
 function setAdmin(id){
-  if (socket && props.isAdmin && jugadorClient?.id) {
-    socket.emit('transferirAdmin', { adminId: jugadorClient.id, idNuevoAdmin: id });
+  if (socket && props.isAdmin && props.jugador?.id) {
+    socket.emit('transferirAdmin', { adminId: props.jugador.id, idNuevoAdmin: id });
   }
 }
 
 function deletePlayer(id){
-  if (socket && props.isAdmin && jugadorClient?.id) {
-    socket.emit('expulsarJugador', { adminId: jugadorClient.id, idJugador: id });
+  if (socket && props.isAdmin && props.jugador?.id) {
+    socket.emit('expulsarJugador', { adminId: props.jugador.id, idJugador: id });
   }
 }
 </script>

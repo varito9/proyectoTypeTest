@@ -22,7 +22,10 @@ const props = defineProps(['socketC', 'llistaJug', 'jug'])
 const socket = props.socketC;
 const llistaJugadors = props.llistaJug;
 const jugadorClient = props.jug;
-const imReady = ref(false)
+//Fem la variable computed perque s'actualitzi si hi ha cap canvi
+const imReady = computed(() => {
+  return jugadorClient?.preparat === true
+})
 
 // Computed per actualitzar-se quan canviïn les dades
 const isMajority = computed(() => {
@@ -31,7 +34,7 @@ const isMajority = computed(() => {
 })
 
 const isAdmin = computed(() => {
-  return jugadorClient?.admin === true
+  return jugadorClient?.rol === 'admin'
 })
 
 //sockets
