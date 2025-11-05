@@ -51,8 +51,8 @@ function endGame() {
 }
 
 function enviarLlistatJugadors() {
-  player.sort((a, b) => b.points - a.points);
-
+  players.sort((a, b) => b.points - a.points);
+  console.log(players)
   //Send the updateRanking to everyone
   io.emit('updateRanking', players);
 }
@@ -186,8 +186,9 @@ io.on("connection", (socket) => {
   socket.on("addPoints", ({ id }) => {
     const player = players.find((p) => p.id === id);
     if (!player || player.role !== "player") return;
-
+    console.log(player)
     player.points++;
+    console.log(player)
     enviarLlistatJugadors();
 
   });
@@ -196,8 +197,9 @@ io.on("connection", (socket) => {
   socket.on("addErrors", ({ id }) => {
     const player = players.find((p) => p.id === id);
     if (!player || player.role !== "player") return;
-
+    console.log(player)
     player.errors++;
+    console.log(player)
     enviarLlistatJugadors();
   });
 
