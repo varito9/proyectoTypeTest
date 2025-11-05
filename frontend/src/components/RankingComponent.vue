@@ -18,8 +18,35 @@
 </template>
 
 <script setup>
-const props = defineProps(['llistaJug']);
+import { ref, computed, onMounted, onUnmounted } from 'vue';
 
-const llistatJugadors = props.llistaJug || [];
+const props = defineProps(['llistaJug', 'socketC']);
+
+const llistatJugadors = ref(props.llistaJug || []);
+const socket = computed(() => props.socketC)
+
+//Funció per actualitzar el ranking (nova llista)
+const handleRankingUpdate = (novaLlista) => {
+    llistatJugadors.value = novaLlista;
+};
+
+//Quan es carrega aquest component es fica a escoltar el updateRankig
+onMounted(() => {
+    if (socket.value) {
+        socket.value.on('updateRanking', (data) => {
+            handleRankingUpdate(data);
+        });
+    }
+});
+
+//Quan es decarrega el component treiem l'escolta al socket
+onUnmounted(() => {
+    if (socket.value) {
+        socket.value.off('updateRanking', (data) => {
+            handleRankingUpdate(data);
+        });
+    }
+});
+
 
 </script>

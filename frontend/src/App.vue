@@ -27,7 +27,7 @@
       </div>
       <!--Div on llistem els usuaris de la partida i els accerts i errors d'aquests-->
       <div id="ranquing">
-        <RankingComponent :llista-jug="jugadors" />
+        <RankingComponent :llista-jug="jugadors" :socket="socket" />
       </div>
     </div>
   </div>
