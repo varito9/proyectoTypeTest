@@ -51,10 +51,25 @@ function endGame() {
 }
 
 function enviarLlistatJugadors() {
-  players.sort((a, b) => b.points - a.points);
+  players.sort(compareFN);
   console.log(players)
   //Send the updateRanking to everyone
   io.emit('updateRanking', players);
+
+  function compareFN(a,b){
+    if (a.points > b.points) {
+      return -1
+    } else if (b. points > a.points) {
+      return 1
+    } else if (a.points == b.points){
+        if (a.errors > b.errors) {
+        return 1
+      } else if (b.errors > a.errors) {
+        return -1
+      }
+    }
+  }
+  
 }
 
 // Start listening for server connections
