@@ -1,20 +1,40 @@
 <template>
-  <!-- Si aún no hemos entrado en una sala -->
-  <div v-if="!joinedRoom">
-    <h2>Selecciona o crea una sala</h2>
-    <input v-model="roomInput" placeholder="Nombre de la sala" />
-    <button @click="createOrJoinRoom">Entrar a sala</button>
-  </div>
-
-  <!-- vista de lobby -->
-  <div v-else-if="vista === 'preGame'">
-    <div v-if="!isConnected">
-      <input type="text" v-model="jugador.name" placeholder="Introduce tu nombre" />
-      <button @click="sendNickname(jugador.name)">Entrar</button>
-      <p>Type Racer Royale — Sala: {{ currentRoom }}</p>
+  <div v-if="vista === 'preGame'">
+    <div v-if="fase === 'nombre'" class="centered">
+      <h2>Bienvenido a Type Racer Royale</h2>
+      <input
+        type="text"
+        v-model="jugador.name"
+        placeholder="Introduce tu nombre"
+      />
+      <button @click="guardarNombre">Continuar</button>
     </div>
 
-    <div v-else>
+    <div v-else-if="fase === 'rooms'" class="rooms-view">
+      <h3>Hola {{ jugador.name }} Selecciona una sala</h3>
+
+      <ul class="rooms-list">
+        <li v-for="room in rooms" :key="room.id" class="room-item">
+          <strong>{{ room.name }}</strong>
+          <p>Jugadores: {{ room.playerCount }}/6</p>
+          <button @click="joinRoom(room.id)" :disabled="room.playerCount >= 6">
+            {{ room.playerCount >= 6 ? 'Sala Llena' : 'Unirse' }}
+          </button>
+        </li>
+      </ul>
+
+      <div class="create-room">
+        <input
+          v-model="roomInput"
+          placeholder="Nombre de nueva sala"
+        />
+        <button @click="createRoom">Crear sala</button>
+      </div>
+    </div>
+
+    <div v-else-if="fase === 'lobby'">
+      <p>Estás en la sala: **{{ currentRoom }}**</p>
+      <button @click="leaveRoom">Abandonar Sala</button> 
       <viewLobby
         :socket-c="socket"
         :llista-jug="jugadors"
@@ -24,7 +44,6 @@
     </div>
   </div>
 
-  <!-- vista de juego -->
   <div v-else-if="vista === 'game'">
     <div id="jugador" v-if="!isSpectator">
       <div id="partida">
@@ -36,7 +55,11 @@
         />
       </div>
       <div id="tempsRestant">
-        <TempsRestant :tempsInicial="tempsRestant" :socket="socket" :room-id="currentRoom" />
+        <TempsRestant
+          :tempsInicial="tempsRestant"
+          :socket="socket"
+          :room-id="currentRoom"
+        />
       </div>
       <div id="ranquing">
         <RankingComponent :llista-jug="jugadors" />
@@ -44,127 +67,222 @@
     </div>
   </div>
 
-  <!-- vista de endgame -->
   <div v-else-if="vista === 'endGame'">
     <RankingComponent :llista-jug="jugadors" />
   </div>
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, onMounted, onUnmounted } from 'vue' 
 import { io } from 'socket.io-client'
-import RankingComponent from './components/RankingComponent.vue'
 import viewLobby from './components/PreGame/lobby/viewLobby.vue'
 import GameEngine from './components/Game/GameEngine.vue'
 import TempsRestant from './components/Game/TempsRestant.vue'
+import RankingComponent from './components/RankingComponent.vue'
 
-let socket = null
-
+//  Estados principales
 const vista = ref('preGame')
-const isConnected = ref(false)
+const fase = ref('nombre') // 'nombre' → 'rooms' → 'lobby'
+
+//  Jugador y socket
 const jugador = ref({ name: '', id: null, status: '', role: '' })
+const socket = ref(null)
 const jugadors = ref([])
+
+//  Configuración del juego
 const tempsRestant = ref(-1)
 const isSpectator = ref(false)
-
 const currentRoom = ref('')
-const joinedRoom = ref(false)
 const roomInput = ref('')
+const rooms = ref([])
 
-function createOrJoinRoom() {
-  if (!roomInput.value.trim()) return
-  currentRoom.value = roomInput.value.trim()
-  joinedRoom.value = true
-  tryConn(currentRoom.value)
+function handleSuccessfulJoin(roomId, player) {
+    currentRoom.value = roomId
+    fase.value = 'lobby'
+    Object.assign(jugador.value, player) 
 }
 
-function tryConn(roomId) {
-  if (socket && socket.connected) return
+function initSocket() {
+    if (socket.value && socket.value.connected) return
 
-  socket = io('http://localhost:3001')
+    socket.value = io('http://localhost:3001')
 
-  socket.on('connect', () => {
-    console.log('Socket conectado ✅')
-    if (roomId) {
-      socket.emit('joinRoom', { roomId }, (res) => {
-        if (res?.ok) console.log('Unido a la sala', roomId)
-        else console.error(res?.message)
-      })
-    }
-  })
-
-  socket.on('setPlayerList', (playerList) => {
-    jugadors.value = Array.isArray(playerList) ? [...playerList] : []
-    const updated = jugadors.value.find((j) => j.id === jugador.value.id)
-    if (updated) Object.assign(jugador.value, updated)
-    isSpectator.value = jugador.value.role === 'spectator'
-    if (!isConnected.value && jugador.value.id && jugador.value.name) isConnected.value = true
-  })
-
-  socket.on('gameStarted', (data) => {
-    vista.value = 'game'
-    if (data.time) iniciarComptador(data.time)
-  })
-
-  socket.on('playerKicked', ({ id }) => {
-    if (id === jugador.value.id) {
-      alert('Has sido expulsado de la sala.')
-      resetState()
-    }
-  })
-
-  socket.on('gameFinished', () => {
-    vista.value = 'endGame'
-  })
-}
-
-function resetState() {
-  isConnected.value = false
-  jugador.value = { name: '', id: null, status: '', role: '' }
-  jugadors.value = []
-  joinedRoom.value = false
-  currentRoom.value = ''
-  vista.value = 'preGame'
-  if (socket) socket.disconnect()
-  socket = null
-}
-
-function sendNickname(nickname) {
-  if (!nickname.trim()) return
-  const playerId = jugador.value.id || Date.now()
-  jugador.value.id = playerId
-  jugador.value.name = nickname.trim()
-
-  if (!socket || !socket.connected) {
-    tryConn(currentRoom.value)
-    socket.once('connect', () => {
-      socket.emit('setPlayerName', { name: nickname.trim(), id: playerId, roomId: currentRoom.value })
+    socket.value.on('connect', () => {
+        console.log('Socket conectado ✅')
     })
-  } else {
-    socket.emit('setPlayerName', { name: nickname.trim(), id: playerId, roomId: currentRoom.value })
+    
+    socket.value.on('updateRoomList', (roomList) => {
+        rooms.value = Array.isArray(roomList) ? roomList : []
+    })
+    
+    socket.value.on('roomCreatedAndJoined', ({ roomId, player }) => {
+        handleSuccessfulJoin(roomId, player)
+    })
+    
+    socket.value.on('joinedRoom', ({ roomId, player }) => {
+        handleSuccessfulJoin(roomId, player)
+    })
+    
+    socket.value.on('alreadyInRoom', ({ roomId }) => {
+        fase.value = 'lobby'
+        currentRoom.value = roomId
+    })
+    
+    // 🆕 Aviso si la sala está en partida
+    socket.value.on('roomIsPlaying', ({ roomId }) => {
+        alert(`La sala ${roomId} ya ha comenzado y no puedes unirte.`)
+    })
+    
+    socket.value.on('leftRoom', () => {
+        console.log('Has abandonado la sala.')
+        resetState() 
+        fase.value = 'rooms' 
+    })
+
+    socket.value.on('setPlayerList', (playerList) => {
+        jugadors.value = Array.isArray(playerList) ? [...playerList] : []
+        const updated = jugadors.value.find((j) => j.id === jugador.value.id)
+        if (updated) Object.assign(jugador.value, updated)
+        isSpectator.value = jugador.value.role === 'spectator'
+    })
+
+    socket.value.on('gameStarted', (data) => {
+        vista.value = 'game'
+        if (data.time) iniciarComptador(data.time)
+    })
+
+    socket.value.on('playerKicked', ({ id }) => {
+        if (id === jugador.value.id) {
+            alert('Has sido expulsado de la sala.')
+            resetState() 
+            fase.value = 'nombre'
+        }
+    })
+
+    socket.value.on('gameFinished', () => {
+        vista.value = 'endGame'
+    })
+}
+
+onMounted(() => {
+    initSocket() 
+})
+
+onUnmounted(() => {
+    if (socket.value) {
+        socket.value.emit('leaveGame', { id: jugador.value.id }) 
+        socket.value.disconnect()
+    }
+})
+
+//  FASE 1: Introducir nombre
+
+function guardarNombre() {
+  if (!jugador.value.name.trim()) {
+    jugador.value.name = 'Jugador anónimo'
+  }
+  if (!jugador.value.id) {
+      jugador.value.id = Date.now()
+  }
+  fase.value = 'rooms'
+}
+
+//  FASE 2: Crear o unirse a una sala
+
+function createRoom() {
+  const roomName = roomInput.value.trim() || `Sala de ${jugador.value.name}`
+
+  if (socket.value && socket.value.connected) {
+    socket.value.emit('createRoom', {
+      playerName: jugador.value.name,
+      playerId: jugador.value.id,
+      roomName: roomName
+    })
+    roomInput.value = ''
+  } else {
+      console.error('Socket no conectado.')
   }
 }
 
-function iniciarComptador(tempsInici) {
-  tempsRestant.value = tempsInici
-  const interval = setInterval(() => {
-    if (tempsRestant.value > 0) {
-      tempsRestant.value--
-    } else {
-      clearInterval(interval)
-      socket.emit('gameEnded', { roomId: currentRoom.value })
-      vista.value = 'endGame'
+function joinRoom(roomId) {
+  if (socket.value && socket.value.connected) {
+    socket.value.emit('joinRoom', {
+      roomId: roomId,
+      playerName: jugador.value.name,
+      playerId: jugador.value.id
+    })
+  } else {
+      console.error('Socket no conectado.')
+  }
+}
+
+function leaveRoom() {
+    if (socket.value && socket.value.connected && currentRoom.value) {
+        socket.value.emit('leaveRoom', {
+            roomId: currentRoom.value,
+            playerId: jugador.value.id
+        })
+        currentRoom.value = ''
+        fase.value = 'rooms'
+        jugadors.value = []
     }
-  }, 1000)
+}
+
+
+//  Control de partida
+function iniciarComptador(tempsInici) {
+    tempsRestant.value = tempsInici
+    const interval = setInterval(() => {
+      if (tempsRestant.value > 0) {
+        tempsRestant.value--
+      } else {
+        clearInterval(interval)
+        vista.value = 'endGame' 
+      }
+    }, 1000)
+}
+
+function resetState() {
+    jugador.value = { name: jugador.value.name, id: jugador.value.id, status: '', role: '' }
+    jugadors.value = []
+    vista.value = 'preGame'
+    currentRoom.value = ''
 }
 </script>
 
 <style scoped>
+/* Estilos sin cambios */
+.centered {
+text-align: center;
+padding: 40px;
+}
+
+.rooms-view {
+padding: 20px;
+}
+
+.rooms-list {
+list-style: none;
+display: flex;
+flex-wrap: wrap;
+gap: 16px;
+}
+
+.room-item {
+border: 1px solid #ccc;
+padding: 10px;
+border-radius: 8px;
+width: 200px;
+}
+
+.create-room {
+margin-top: 20px;
+}
+
 .ready {
-  background-color: greenyellow;
+background-color: greenyellow;
 }
 .notReady {
-  background-color: red;
+background-color: red;
 }
 </style>
-  
