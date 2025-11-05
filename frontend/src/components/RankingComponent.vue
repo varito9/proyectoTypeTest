@@ -20,10 +20,10 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from 'vue';
 
-const props = defineProps(['llistaJug', 'socketC']);
+const props = defineProps(['llistaJug', 'socket']);
 
 const llistatJugadors = ref(props.llistaJug || []);
-const socket = computed(() => props.socketC)
+const socket = computed(() => props.socket)
 
 //Funció per actualitzar el ranking (nova llista)
 const handleRankingUpdate = (novaLlista) => {
