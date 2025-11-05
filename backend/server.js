@@ -50,6 +50,13 @@ function endGame() {
   //TODO: Escuchar tambien el evento timeEnded que envia el frontendpara terminar la partida, si los dos se ejecutan, se termina la partida
 }
 
+function enviarLlistatJugadors() {
+  player.sort((a, b) => b.points - a.points);
+
+  //Send the updateRanking to everyone
+  io.emit('updateRanking', players);
+}
+
 // Start listening for server connections
 io.on("connection", (socket) => {
   console.log("Player connected");
@@ -181,6 +188,8 @@ io.on("connection", (socket) => {
     if (!player || player.role !== "player") return;
 
     player.points++;
+    enviarLlistatJugadors();
+
   });
 
   // Listen when errors are added to a player
@@ -189,6 +198,7 @@ io.on("connection", (socket) => {
     if (!player || player.role !== "player") return;
 
     player.errors++;
+    enviarLlistatJugadors();
   });
 
   socket.on("disconnect", () => {
