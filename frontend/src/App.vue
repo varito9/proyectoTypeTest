@@ -48,21 +48,9 @@
   </div>
 
   <div v-else-if="vista === 'game'">
-    <div id="jugador" v-if="!isSpectator">
-      <GameEngine
-        :socket="socket"
-        :jugador="jugador"
-        :es-espectador="isSpectator"
-        :room-name="currentRoom"
-      />
-      <TempsRestant :tempsInicial="tempsRestant" />
-      <RankingComponent :llista-jug="jugadors" />
-    </div>
-
-    <div v-else>
-      <h2>Modo espectador</h2>
-      <RankingComponent :llista-jug="jugadors" />
-    </div>
+    <GameEngine :socket="socket" :jugador="jugador" :room-name="currentRoom" />
+    <TempsRestant :tempsInicial="tempsRestant" />
+    <RankingComponent :llista-jug="jugadors" />
   </div>
 
   <div v-else-if="vista === 'endGame'">
@@ -89,7 +77,6 @@ const joinedRoom = ref(false)
 const jugador = ref({ name: '', id: null, role: 'player' })
 const jugadors = ref([])
 const tempsRestant = ref(-1)
-const isSpectator = ref(false)
 
 const currentRoom = ref('')
 const roomInput = ref('')
@@ -122,7 +109,6 @@ function tryConn() {
     jugadors.value = [...room.players]
     const yo = room.players.find((p) => p.id === jugador.value.id)
     if (yo) Object.assign(jugador.value, yo)
-    isSpectator.value = jugador.value.role === 'spectator'
   })
 
   socket.on('updateRanking', (ranking) => {
@@ -230,7 +216,6 @@ function returnToLobby() {
   if (!socket || !socket.connected) return alert('Socket no conectado. Recarga la página.')
   socket.emit('playAgain', { roomName: currentRoom.value, id: jugador.value.id })
   vista.value = 'preGame'
-  isSpectator.value = false
   tempsRestant.value = -1
 }
 
