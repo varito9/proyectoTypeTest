@@ -14,7 +14,7 @@
           <span v-if="player.role === 'spectator'">(Espectador)</span>
         </td>
         <td v-if="player.role !== 'spectator'">{{ player.errors }}</td>
-        <td v-if="player.role !== 'spectator'">{{ player.correct }}</td>
+        <td v-if="player.role !== 'spectator'">{{ player.points }}</td>
       </tr>
     </tbody>
   </table>

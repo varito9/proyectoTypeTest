@@ -70,6 +70,14 @@ function endGame(roomName) {
 
   room.beingPlayed = false;
 
+  // Resetear roles de espectadores que eran players antes del juego
+  room.players.forEach((p) => {
+    if (p.role !== "admin") {
+      p.role = "player";
+    }
+    p.isReady = false;
+  });
+
   const ranking = [...room.players]
     .filter((player) => player.role === "player")
     .sort((a, b) => b.points - a.points || a.errors - b.errors);
@@ -90,7 +98,7 @@ function broadcastRanking(roomName) {
   if (!room) return;
 
   const ranking = [...room.players]
-    .filter((p) => p.role === "player")
+    .filter((p) => p.role !== "spectator")
     .sort((a, b) => b.points - a.points || a.errors - b.errors);
 
   io.to(roomName).emit("updateRanking", ranking);
@@ -121,8 +129,10 @@ io.on("connection", (socket) => {
   // Listener para crear sala
   socket.on("createRoom", ({ roomName, isPrivate = false }) => {
     const player = socket.data.player;
-    if (!player) return socket.emit("error", { message: "Jugador no registrado." });
-    if (findRoom(roomName)) return socket.emit("error", { message: "La sala ya existe." });
+    if (!player)
+      return socket.emit("error", { message: "Jugador no registrado." });
+    if (findRoom(roomName))
+      return socket.emit("error", { message: "La sala ya existe." });
 
     player.role = "admin";
     const room = createRoom(roomName, player, isPrivate);
@@ -130,13 +140,16 @@ io.on("connection", (socket) => {
     socket.join(roomName);
     broadcastRoomState(roomName);
 
-    console.log(`${player.name} creó la sala ${roomName} (Privada: ${isPrivate})`);
+    console.log(
+      `${player.name} creó la sala ${roomName} (Privada: ${isPrivate})`
+    );
   });
 
   // Listener para unirse a sala (por nombre o código)
   socket.on("joinRoom", ({ roomName, accessCode }) => {
     const player = socket.data.player;
-    if (!player) return socket.emit("error", { message: "Jugador no registrado." });
+    if (!player)
+      return socket.emit("error", { message: "Jugador no registrado." });
 
     let room;
     const codeToSearch = accessCode ? accessCode.toUpperCase() : null;
@@ -147,19 +160,27 @@ io.on("connection", (socket) => {
       room = findRoom(roomName);
     }
 
-    if (!room) return socket.emit("error", { message: "Sala no encontrada o código incorrecto." });
+    if (!room)
+      return socket.emit("error", {
+        message: "Sala no encontrada o código incorrecto.",
+      });
 
     if (room.isPrivate) {
       if (!codeToSearch || room.accessCode !== codeToSearch) {
-        return socket.emit("error", { message: "Código de acceso incorrecto." });
+        return socket.emit("error", {
+          message: "Código de acceso incorrecto.",
+        });
       }
     } else {
       if (codeToSearch) {
-        return socket.emit("error", { message: "Error en la unión. Esta sala no requiere código." });
+        return socket.emit("error", {
+          message: "Error en la unión. Esta sala no requiere código.",
+        });
       }
     }
 
-    if (room.players.length >= 6) return socket.emit("error", { message: "La sala está plena" });
+    if (room.players.length >= 6)
+      return socket.emit("error", { message: "La sala está plena" });
 
     if (room.players.length === 0 && !room.beingPlayed) {
       player.role = "admin";
@@ -217,7 +238,9 @@ io.on("connection", (socket) => {
     const room = findRoom(roomName);
     if (!room) return;
 
-    const admin = room.players.find((p) => p.id === adminId && p.role === "admin");
+    const admin = room.players.find(
+      (p) => p.id === adminId && p.role === "admin"
+    );
     if (!admin) return;
 
     const kickedPlayer = room.players.find((p) => p.id === playerId);
@@ -234,7 +257,7 @@ io.on("connection", (socket) => {
     }
 
     if (room.players.length === 0) {
-      rooms = rooms.filter(r => r.name !== roomName);
+      rooms = rooms.filter((r) => r.name !== roomName);
       broadcastRoomList();
       return;
     }
@@ -247,7 +270,9 @@ io.on("connection", (socket) => {
     const room = findRoom(roomName);
     if (!room) return;
 
-    const currentAdmin = room.players.find((p) => p.id === adminId && p.role === "admin");
+    const currentAdmin = room.players.find(
+      (p) => p.id === adminId && p.role === "admin"
+    );
     const newAdmin = room.players.find((p) => p.id === newAdminId);
 
     if (!currentAdmin || !newAdmin) return;
@@ -326,7 +351,7 @@ io.on("connection", (socket) => {
       }
 
       if (room.players.length === 0) {
-        rooms = rooms.filter(r => r.name !== room.name);
+        rooms = rooms.filter((r) => r.name !== room.name);
         broadcastRoomList();
         return;
       }
@@ -348,10 +373,6 @@ io.on("connection", (socket) => {
     player.isReady = false;
     player.points = 0;
     player.errors = 0;
-
-    if (player.role === 'spectator' && !room.beingPlayed) {
-      player.role = 'player';
-    }
 
     broadcastRoomState(roomName);
   });
