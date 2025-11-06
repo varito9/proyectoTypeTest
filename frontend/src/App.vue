@@ -15,11 +15,11 @@
 
   <!-- vista de joc -->
   <div v-else-if="vista === 'game'">
-    <div id="jugador" v-if="!isSpectator">
+    <div id="jugador" >
       <!-- Div on mostrem la informació de la partida (els textos)-->
       <div id="partida">
         <!--Truquem al game Engine i enviem les props que rebrà aquest component-->
-        <GameEngine :socket="socket" :jugador="jugador" :es-espectador="isSpectator" />
+        <GameEngine :socket="socket" :jugador="jugador"/>
       </div>
       <!--Div on mostrem el temps restant de la partida-->
       <div id="tempsRestant">
@@ -55,7 +55,6 @@ const isConnected = ref(false) //Depèn de si connecta o no
 const jugador = ref({ name: '', id: null, status: '', role: '' }) //rol: 'ready' | 'notReady'
 const jugadors = ref([])
 const tempsInicial = ref(0)
-const isSpectator = ref(jugador.value.status === 'spectator')
 
 //sockets
 

@@ -8,7 +8,7 @@
             </tr>
         </thead>
         <tbody>
-            <tr v-for="player in llistatJugadors" :key="player.id">
+            <tr v-for="player in llistatJugadors" :key="player.id" v-if="!isSpectator">
                 <td> {{ player.name }}</td>
                 <td> {{ player.errors }}</td>
                 <td> {{ player.points }}</td>
@@ -23,8 +23,11 @@ import { computed} from 'vue';
 const props = defineProps(['llistaJug']);
 
 const llistatJugadors = computed(() => {
-  return props.llistaJug || [];
+    if (!props.llistaJug) return [];
+    //filtrem la llista de jugadors per eliminar de la llista es que son espectadors
+    return props.llistaJug.filter(player => player.role !== 'spectator');
 });
+
 
 
 </script>
