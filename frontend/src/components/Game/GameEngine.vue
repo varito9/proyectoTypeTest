@@ -1,53 +1,58 @@
 <template>
   <div id="game-engine">
-    <h2>Escriu les paraules següents:</h2>
+    <div id="player" v-if="!isSpectator">
+      <h2>Escriu les paraules següents:</h2>
 
-    <div class="paraules">
-      <span
-        v-for="(paraula, wordIndex) in estatDelJoc.paraules"
-        :key="wordIndex"
-        class="paraula"
-        :class="{
-          completada: paraula.estat === 'completada',
-          actual: wordIndex === estatDelJoc.indexParaulaActiva,
-        }"
-      >
-        <template v-if="wordIndex === estatDelJoc.indexParaulaActiva">
-          <span
-            v-for="(lletra, letterIndex) in paraula.text.split('')"
-            :key="letterIndex"
-            :class="getClasseLletra(letterIndex)"
-          >
-            {{ lletra }}
-          </span>
-        </template>
+      <div class="paraules">
+        <span
+          v-for="(paraula, wordIndex) in estatDelJoc.paraules"
+          :key="wordIndex"
+          class="paraula"
+          :class="{
+            completada: paraula.estat === 'completada',
+            actual: wordIndex === estatDelJoc.indexParaulaActiva,
+          }"
+        >
+          <template v-if="wordIndex === estatDelJoc.indexParaulaActiva">
+            <span
+              v-for="(lletra, letterIndex) in paraula.text.split('')"
+              :key="letterIndex"
+              :class="getClasseLletra(letterIndex)"
+            >
+              {{ lletra }}
+            </span>
+          </template>
 
-        <template v-else>
-          {{ paraula.text }}
-        </template>
-      </span>
+          <template v-else>
+            {{ paraula.text }}
+          </template>
+        </span>
+      </div>
+
+      <input
+        v-model="estatDelJoc.textEntrat"
+        @input="validarProgres"
+        type="text"
+        placeholder="Escriu aquí..."
+        class="inputJoc"
+        autofocus
+      />
     </div>
-
-    <input
-      v-model="estatDelJoc.textEntrat"
-      @input="validarProgres"
-      type="text"
-      placeholder="Escriu aquí..."
-      class="inputJoc"
-      autofocus
-    />
+    <div id="spectator" v-else>
+      <h1>Ets espectador, espera a que s'acabi la partida</h1>
+    </div>
   </div>
 </template>
 
 <script setup>
 // Imports necessaris per a aquest component
-import { ref, reactive } from 'vue'
+import { ref, reactive, computed } from 'vue'
 
 // 1. DEFINIM LES PROPS (dades que rebem del component pare: App.vue)
 const props = defineProps({
   socket: { type: Object, required: true },
   jugador: { type: Object, required: true },
-  esEspectador: { type: Boolean, required: true },
+  roomName: { type: String, required: true },
 })
 
 // 2. VARIABLES DEL JOC
@@ -66,6 +71,7 @@ const estatDelJoc = reactive({
 const paraulaActiva = ref(estatDelJoc.paraules[0])
 let textAnterior = ''
 const acabada = ref(false)
+const isSpectator = computed(() => props.jugador.role === 'spectator')
 
 // 3. FUNCIONS DEL JOC
 function validarProgres() {
@@ -80,14 +86,14 @@ function validarProgres() {
   if (inputActual.length > textAnterior.length) {
     const indexActual = inputActual.length - 1
     if (inputActual[indexActual] !== paraulaSencera[indexActual]) {
-      props.socket.emit('addError', { id: props.jugador.id })
+      props.socket.emit('addErrors', { roomName: props.roomName, id: props.jugador.id })
     }
   }
   textAnterior = inputActual
 
   // Comprovem encert de paraula sencera
   if (estatDelJoc.textEntrat === paraulaActiva.value.text) {
-    props.socket.emit('addCorrect', { id: props.jugador.id })
+    props.socket.emit('addPoints', { roomName: props.roomName, id: props.jugador.id })
 
     paraulaActiva.value.estat = 'completada'
     estatDelJoc.indexParaulaActiva++
