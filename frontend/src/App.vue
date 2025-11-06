@@ -1,288 +1,222 @@
 <template>
-  <div v-if="vista === 'preGame'">
-    <div v-if="fase === 'nombre'" class="centered">
-      <h2>Bienvenido a Type Racer Royale</h2>
-      <input
-        type="text"
-        v-model="jugador.name"
-        placeholder="Introduce tu nombre"
-      />
-      <button @click="guardarNombre">Continuar</button>
-    </div>
+  <div v-if="!isConnected">
+    <h2>Introduce tu nombre</h2>
+    <input type="text" v-model="jugador.name" placeholder="Tu nombre" />
+    <button @click="sendNickname(jugador.name)">Continuar</button>
+  </div>
 
-    <div v-else-if="fase === 'rooms'" class="rooms-view">
-      <h3>Hola {{ jugador.name }} Selecciona una sala</h3>
+  <div v-else-if="!joinedRoom">
+    <h2>Salas disponibles</h2>
 
-      <ul class="rooms-list">
-        <li v-for="room in rooms" :key="room.id" class="room-item">
-          <strong>{{ room.name }}</strong>
-          <p>Jugadores: {{ room.playerCount }}/6</p>
-          <button @click="joinRoom(room.id)" :disabled="room.playerCount >= 6">
-            {{ room.playerCount >= 6 ? 'Sala Llena' : 'Unirse' }}
-          </button>
-        </li>
-      </ul>
+    <button @click="loadRooms">Actualizar lista</button>
 
-      <div class="create-room">
-        <input
-          v-model="roomInput"
-          placeholder="Nombre de nueva sala"
-        />
-        <button @click="createRoom">Crear sala</button>
-      </div>
-    </div>
+    <ul>
+      <li v-for="room in rooms" :key="room.name">
+        <strong>{{ room.name }}</strong>
+        — {{ room.playerCount }} jugadores
+        <span v-if="room.beingPlayed"> | En partida</span>
 
-    <div v-else-if="fase === 'lobby'">
-      <p>Estás en la sala: **{{ currentRoom }}**</p>
-      <button @click="leaveRoom">Abandonar Sala</button> 
-      <viewLobby
-        :socket-c="socket"
-        :llista-jug="jugadors"
-        :jug="jugador"
-        :room-id="currentRoom"
-      />
-    </div>
+        <button @click="joinExistingRoom(room.name)">Unirse</button>
+      </li>
+    </ul>
+
+    <h3>Crear nueva sala</h3>
+    <input v-model="roomInput" placeholder="Nombre de la sala" />
+    <button @click="createRoom">Crear sala</button>
+  </div>
+
+  <div v-else-if="vista === 'preGame'">
+    <h2>Sala: {{ currentRoom }}</h2>
+    <viewLobby
+      :socket-c="socket"
+      :llista-jug="jugadors"
+      :is-admin="jugador.role === 'admin'"
+      :jugador="jugador"
+      :room-name="currentRoom"
+    />
   </div>
 
   <div v-else-if="vista === 'game'">
     <div id="jugador" v-if="!isSpectator">
-      <div id="partida">
-        <GameEngine
-          :socket="socket"
-          :jugador="jugador"
-          :es-espectador="isSpectator"
-          :room-id="currentRoom"
-        />
-      </div>
-      <div id="tempsRestant">
-        <TempsRestant
-          :tempsInicial="tempsRestant"
-          :socket="socket"
-          :room-id="currentRoom"
-        />
-      </div>
-      <div id="ranquing">
-        <RankingComponent :llista-jug="jugadors" />
-      </div>
+      <GameEngine
+        :socket="socket"
+        :jugador="jugador"
+        :es-espectador="isSpectator"
+        :room-name="currentRoom"
+      />
+      <TempsRestant :tempsInicial="tempsRestant" />
+      <RankingComponent :llista-jug="jugadors" />
+    </div>
+
+    <div v-else>
+      <h2>Modo espectador</h2>
+      <RankingComponent :llista-jug="jugadors" />
     </div>
   </div>
 
   <div v-else-if="vista === 'endGame'">
+    <h2>Partida terminada</h2>
     <RankingComponent :llista-jug="jugadors" />
+    <button @click="returnToLobby">Volver al lobby</button>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted } from 'vue' 
+import { ref } from 'vue'
 import { io } from 'socket.io-client'
+import RankingComponent from './components/RankingComponent.vue'
 import viewLobby from './components/PreGame/lobby/viewLobby.vue'
 import GameEngine from './components/Game/GameEngine.vue'
 import TempsRestant from './components/Game/TempsRestant.vue'
-import RankingComponent from './components/RankingComponent.vue'
 
-//  Estados principales
+let socket = null
+
+const rooms = ref([])
 const vista = ref('preGame')
-const fase = ref('nombre') // 'nombre' → 'rooms' → 'lobby'
-
-//  Jugador y socket
-const jugador = ref({ name: '', id: null, status: '', role: '' })
-const socket = ref(null)
+const isConnected = ref(false) // Sigue en 'false' hasta que el servidor confirme
+const joinedRoom = ref(false)
+const jugador = ref({ name: '', id: null, role: 'player' })
 const jugadors = ref([])
-
-//  Configuración del juego
 const tempsRestant = ref(-1)
 const isSpectator = ref(false)
+
 const currentRoom = ref('')
 const roomInput = ref('')
-const rooms = ref([])
 
-function handleSuccessfulJoin(roomId, player) {
-    currentRoom.value = roomId
-    fase.value = 'lobby'
-    Object.assign(jugador.value, player) 
-}
+// --- CONEXIÓN Y EVENTOS ---
 
-function initSocket() {
-    if (socket.value && socket.value.connected) return
+function tryConn() {
+  if (socket && socket.connected) return
+  socket = io('http://localhost:3001')
 
-    socket.value = io('http://localhost:3001')
+  // Escuchamos la confirmación del servidor
+  socket.on('playerRegistered', (playerData) => {
+    console.log('Servidor ha confirmado el registro:', playerData)
+    Object.assign(jugador.value, playerData) // Sincroniza el jugador
 
-    socket.value.on('connect', () => {
-        console.log('Socket conectado ✅')
-    })
-    
-    socket.value.on('updateRoomList', (roomList) => {
-        rooms.value = Array.isArray(roomList) ? roomList : []
-    })
-    
-    socket.value.on('roomCreatedAndJoined', ({ roomId, player }) => {
-        handleSuccessfulJoin(roomId, player)
-    })
-    
-    socket.value.on('joinedRoom', ({ roomId, player }) => {
-        handleSuccessfulJoin(roomId, player)
-    })
-    
-    socket.value.on('alreadyInRoom', ({ roomId }) => {
-        fase.value = 'lobby'
-        currentRoom.value = roomId
-    })
-    
-    // 🆕 Aviso si la sala está en partida
-    socket.value.on('roomIsPlaying', ({ roomId }) => {
-        alert(`La sala ${roomId} ya ha comenzado y no puedes unirte.`)
-    })
-    
-    socket.value.on('leftRoom', () => {
-        console.log('Has abandonado la sala.')
-        resetState() 
-        fase.value = 'rooms' 
-    })
+    // AHORA SÍ es seguro mostrar la lista de salas
+    isConnected.value = true
+    loadRooms() // Carga la lista de salas
+  })
 
-    socket.value.on('setPlayerList', (playerList) => {
-        jugadors.value = Array.isArray(playerList) ? [...playerList] : []
-        const updated = jugadors.value.find((j) => j.id === jugador.value.id)
-        if (updated) Object.assign(jugador.value, updated)
-        isSpectator.value = jugador.value.role === 'spectator'
-    })
+  // --- Listeners Principales ---
+  socket.on('roomList', (list) => {
+    rooms.value = list
+  })
 
-    socket.value.on('gameStarted', (data) => {
-        vista.value = 'game'
-        if (data.time) iniciarComptador(data.time)
-    })
+  socket.on('updateRoomState', (room) => {
+    jugadors.value = [...room.players]
+    const yo = room.players.find((p) => p.id === jugador.value.id)
+    if (yo) Object.assign(jugador.value, yo)
+    isSpectator.value = jugador.value.role === 'spectator'
+  })
 
-    socket.value.on('playerKicked', ({ id }) => {
-        if (id === jugador.value.id) {
-            alert('Has sido expulsado de la sala.')
-            resetState() 
-            fase.value = 'nombre'
-        }
-    })
-
-    socket.value.on('gameFinished', () => {
-        vista.value = 'endGame'
-    })
-}
-
-onMounted(() => {
-    initSocket() 
-})
-
-onUnmounted(() => {
-    if (socket.value) {
-        socket.value.emit('leaveGame', { id: jugador.value.id }) 
-        socket.value.disconnect()
+  socket.on('updateRanking', (ranking) => {
+    if (vista.value === 'game') {
+      jugadors.value = [...ranking]
     }
-})
+  })
 
-//  FASE 1: Introducir nombre
+  socket.on('gameStarted', ({ time }) => {
+    vista.value = 'game'
+    iniciarComptador(time)
+  })
 
-function guardarNombre() {
-  if (!jugador.value.name.trim()) {
-    jugador.value.name = 'Jugador anónimo'
-  }
-  if (!jugador.value.id) {
-      jugador.value.id = Date.now()
-  }
-  fase.value = 'rooms'
-}
+  socket.on('gameFinished', ({ ranking }) => {
+    jugadors.value = [...ranking]
+    vista.value = 'endGame'
+  })
 
-//  FASE 2: Crear o unirse a una sala
+  socket.on('kicked', () => {
+    alert('Has sido expulsado de la sala.')
+    resetToRoomList()
+  })
 
-function createRoom() {
-  const roomName = roomInput.value.trim() || `Sala de ${jugador.value.name}`
-
-  if (socket.value && socket.value.connected) {
-    socket.value.emit('createRoom', {
-      playerName: jugador.value.name,
-      playerId: jugador.value.id,
-      roomName: roomName
-    })
-    roomInput.value = ''
-  } else {
-      console.error('Socket no conectado.')
-  }
-}
-
-function joinRoom(roomId) {
-  if (socket.value && socket.value.connected) {
-    socket.value.emit('joinRoom', {
-      roomId: roomId,
-      playerName: jugador.value.name,
-      playerId: jugador.value.id
-    })
-  } else {
-      console.error('Socket no conectado.')
-  }
-}
-
-function leaveRoom() {
-    if (socket.value && socket.value.connected && currentRoom.value) {
-        socket.value.emit('leaveRoom', {
-            roomId: currentRoom.value,
-            playerId: jugador.value.id
-        })
-        currentRoom.value = ''
-        fase.value = 'rooms'
-        jugadors.value = []
-    }
-}
-
-
-//  Control de partida
-function iniciarComptador(tempsInici) {
-    tempsRestant.value = tempsInici
-    const interval = setInterval(() => {
-      if (tempsRestant.value > 0) {
-        tempsRestant.value--
-      } else {
-        clearInterval(interval)
-        vista.value = 'endGame' 
-      }
-    }, 1000)
-}
-
-function resetState() {
-    jugador.value = { name: jugador.value.name, id: jugador.value.id, status: '', role: '' }
-    jugadors.value = []
-    vista.value = 'preGame'
+  socket.on('error', ({ message }) => {
+    alert(`Error del servidor: ${message}`)
+    joinedRoom.value = false
     currentRoom.value = ''
+  })
+
+  socket.on('youAreNowAdmin', () => {
+    alert('Te han transferido el rol de Administrador.')
+    jugador.value.role = 'admin'
+  })
+}
+
+// --- ACCIONES DEL USUARIO ---
+
+// 1. Enviar nombre (Pantalla 1)
+function sendNickname(nickname) {
+  if (!nickname.trim()) return
+
+  jugador.value.id = jugador.value.id || Date.now()
+  jugador.value.name = nickname.trim()
+
+  tryConn() // Conecta al socket (esto registrará el listener de 'playerRegistered')
+
+  // Emitimos, pero ya NO cambiamos isConnected.value aquí.
+  // El listener 'playerRegistered' se encargará.
+  socket.emit('setPlayerName', {
+    name: jugador.value.name,
+    id: jugador.value.id,
+  })
+}
+
+// 2. Cargar salas (Pantalla 2)
+function loadRooms() {
+  if (!socket || !socket.connected) tryConn()
+  socket.emit('getRoomList')
+}
+
+// 2. Unirse a sala (Pantalla 2)
+function joinExistingRoom(roomName) {
+  socket.emit('joinRoom', { roomName })
+  currentRoom.value = roomName
+  joinedRoom.value = true
+  vista.value = 'preGame'
+}
+
+// 2. Crear sala (Pantalla 2)
+function createRoom() {
+  if (!roomInput.value.trim()) return
+  socket.emit('createRoom', { roomName: roomInput.value.trim() })
+  currentRoom.value = roomInput.value.trim()
+  joinedRoom.value = true
+  vista.value = 'preGame'
+}
+
+// ... (resto de tus funciones: iniciarComptador, returnToLobby, resetToRoomList) ...
+function iniciarComptador(t) {
+  tempsRestant.value = t
+  const interval = setInterval(() => {
+    if (tempsRestant.value > 0) tempsRestant.value--
+    else clearInterval(interval)
+  }, 1000)
+}
+
+function returnToLobby() {
+  socket.emit('playAgain', { roomName: currentRoom.value, id: jugador.value.id })
+  vista.value = 'preGame'
+  isSpectator.value = false
+  tempsRestant.value = -1
+}
+
+function resetToRoomList() {
+  joinedRoom.value = false
+  currentRoom.value = ''
+  vista.value = 'preGame'
+  jugadors.value = []
+  loadRooms()
 }
 </script>
 
 <style scoped>
-/* Estilos sin cambios */
-.centered {
-text-align: center;
-padding: 40px;
-}
-
-.rooms-view {
-padding: 20px;
-}
-
-.rooms-list {
-list-style: none;
-display: flex;
-flex-wrap: wrap;
-gap: 16px;
-}
-
-.room-item {
-border: 1px solid #ccc;
-padding: 10px;
-border-radius: 8px;
-width: 200px;
-}
-
-.create-room {
-margin-top: 20px;
-}
-
+/* Estos estilos venían del código anterior */
 .ready {
-background-color: greenyellow;
+  background-color: greenyellow;
 }
 .notReady {
-background-color: red;
+  background-color: red;
 }
 </style>
