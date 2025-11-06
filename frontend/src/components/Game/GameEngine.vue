@@ -109,6 +109,8 @@ function validarProgres() {
       acabada.value = true
     }
   }
+
+  playerGameStatus();
 }
 
 // 4. Funció que afegeix estils a cada lletra
@@ -132,6 +134,16 @@ function getClasseLletra(indexLletra) {
   } else {
     return 'lletra-incorrecta' // No coincideix
   }
+}
+
+// 5. Funció que envia al servidor l'informació actual del seu estat de la partida
+function playerGameStatus() {
+  props.socket.emit('playerGameStatus', {
+    id: props.jugador.id,
+    textEntrat: estatDelJoc.textEntrat,
+    indexParaulaActiva: estatDelJoc.indexParaulaActiva,
+    paraules: estatDelJoc.paraules
+  });
 }
 
 
