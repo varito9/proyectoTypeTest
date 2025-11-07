@@ -19,8 +19,15 @@ let gameConfig = {
   time: 60,
 };
 let timer = null;
-let gameStats = [];
-let spectators = [];
+let gameStats = [
+  {id: 0, textEntrat: '', indexparaulaActiva: 0},
+  {id: 1, textEntrat: '', indexparaulaActiva: 0},
+  {id: 2, textEntrat: '', indexparaulaActiva: 0},
+  {id: 3, textEntrat: '', indexparaulaActiva: 0},
+  {id: 4, textEntrat: '', indexparaulaActiva: 0},
+  {id: 5, textEntrat: '', indexparaulaActiva: 0}
+];
+let spectators = []
 
 // Function to send the player list to all connected clients
 function broadcastPlayerList() {
@@ -230,20 +237,15 @@ io.on("connection", (socket) => {
   socket.on("playerGameStatus", ({ data }) => {
     //rep: {id: 0, textEntrat: '', indexparaulaActiva: 0}
     const newEntry = data;
-
-    // Buesquem si el jugador ja existeix a gameStats
-    const playerIndex = gameStats.findIndex((p) => p.id === newEntry.id);
-    if (playerIndex !== -1) {
-      // Si existeix, l'actualitzem
-      gameStats[playerIndex] = newEntry;
-    } else {
-      // si no l'afegim
-      gameStats.push(newEntry);
-    } // Enviem als espectadors l'informació gameStats
-    spectators.forEach((spectate) =>
-      io.to(spectate.socketId).emit("spectatorGameView", gameStats)
-    );
-
+    gameStats.forEach(player => {
+      if(player.id == newEntry.id){
+        player.textEntrat = newEntry.textEntrat;
+        player.indexparaulaActiva = newEntry.indexparaulaActiva;
+        player.paraules = newEntry.paraules;
+      }
+    });
+    spectators.forEach( (spectate) => io.to(spectate.socketId).emit('spectatorGameView', gameStats))
+  })
     /*gameStats = gameStats.filter((p) => p.id !== newEntry.id);
     gameStats.push(newEntry);
     gameStats.sort((a,b) => b.id - a.id) 
@@ -253,8 +255,7 @@ io.on("connection", (socket) => {
       {id: 2, textEntrat: '', indexparaulaActiva: 0},
       {id: 3, textEntrat: '', indexparaulaActiva: 0}
     ]*/
-  });
-
+  
   socket.on("disconnect", () => {
     const player = players.find((p) => p.socketId === socket.id);
     if (!player) return;
