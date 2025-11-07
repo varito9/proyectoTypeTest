@@ -1,14 +1,14 @@
 <template>
   <div v-if="!isConnected">
-    <h2>Introduce tu nombre</h2>
-    <input type="text" v-model="jugador.name" placeholder="Tu nombre" />
-    <button @click="sendNickname(jugador.name)">Continuar</button>
+    <h2 class="centrar">Introduce tu nombre</h2>
+    <div class="centro">
+      <input type="text" v-model="jugador.name" placeholder="Tu nombre" />
+      <button @click="sendNickname(jugador.name)">Continuar</button>
+    </div>
   </div>
 
   <div v-else-if="!joinedRoom">
     <h2>Salas disponibles (Públicas)</h2>
-
-    <button @click="loadRooms">🔄 Actualizar lista</button>
 
     <ul class="room-list">
       <li v-for="room in rooms" :key="room.name" class="room-item">
@@ -56,7 +56,11 @@
   <div v-else-if="vista === 'endGame'">
     <h2>Partida terminada</h2>
     <RankingComponent :llista-jug="jugadors" />
-    <button @click="returnToLobby">Volver al lobby</button>
+
+    <div>
+      <button @click="leaveRoom" class="btn-leave">Salir de la sala</button>
+      <button @click="returnToLobby">Volver al lobby</button>
+    </div>
   </div>
 </template>
 
@@ -219,6 +223,16 @@ function returnToLobby() {
   tempsRestant.value = -1
 }
 
+function leaveRoom() {
+  if (!socket || !socket.connected) return alert('Socket no conectado. Recarga la página.')
+
+  // Avisamos al servidor que este jugador abandona la sala
+  socket.emit('leaveRoom', { roomName: currentRoom.value, id: jugador.value.id })
+
+  // Volvemos a la lista de salas
+  resetToRoomList()
+}
+
 function resetToRoomList() {
   joinedRoom.value = false
   currentRoom.value = ''
@@ -230,6 +244,14 @@ function resetToRoomList() {
 </script>
 
 <style scoped>
+.centrar {
+  text-align: center;
+}
+.centro {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
 .ready {
   background-color: greenyellow;
 }

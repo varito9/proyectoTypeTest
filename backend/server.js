@@ -63,6 +63,15 @@ function broadcastRoomList() {
   io.emit("roomList", roomList);
 }
 
+//Eliminar Rooms sense cap jugador
+function removeEmptyRooms() {
+  const before = rooms.length;
+  rooms = rooms.filter((room) => room.players.length > 0);
+  if (rooms.length !== before) {
+    broadcastRoomList();
+  }
+}
+
 // Function to end the game and send the final ranking
 function endGame(roomName) {
   const room = findRoom(roomName);
@@ -90,6 +99,7 @@ function endGame(roomName) {
   }
   broadcastRoomState(roomName);
   broadcastRoomList();
+  removeEmptyRooms();
 }
 
 // Enviem el rànquing actualitzat
@@ -256,11 +266,7 @@ io.on("connection", (socket) => {
       io.to(room.players[0].socketId).emit("youAreNowAdmin");
     }
 
-    if (room.players.length === 0) {
-      rooms = rooms.filter((r) => r.name !== roomName);
-      broadcastRoomList();
-      return;
-    }
+    removeEmptyRooms();
 
     broadcastRoomState(roomName);
   });
@@ -350,11 +356,7 @@ io.on("connection", (socket) => {
         io.to(room.players[0].socketId).emit("youAreNowAdmin");
       }
 
-      if (room.players.length === 0) {
-        rooms = rooms.filter((r) => r.name !== room.name);
-        broadcastRoomList();
-        return;
-      }
+      removeEmptyRooms();
 
       broadcastRoomState(room.name);
       broadcastRoomList();
@@ -374,6 +376,32 @@ io.on("connection", (socket) => {
     player.points = 0;
     player.errors = 0;
 
+    broadcastRoomState(roomName);
+  });
+
+  //socket que escolta quan un jgador es marxa al acabar la partida
+  socket.on("leaveRoom", ({ roomName, id }) => {
+    const room = findRoom(roomName);
+    if (!room) return;
+
+    const player = room.players.find((p) => p.id === id);
+    if (!player) return;
+
+    // Sacamos al jugador
+    room.players = room.players.filter((p) => p.id !== id);
+    socket.leave(roomName);
+
+    console.log(`${player.name} ha salido de la sala ${roomName}`);
+
+    // Si era admin, pasar rol al siguiente jugador
+    if (player.role === "admin" && room.players.length > 0) {
+      room.players[0].role = "admin";
+      io.to(room.players[0].socketId).emit("youAreNowAdmin");
+    }
+
+    // Refrescar estat
+    removeEmptyRooms();
+    broadcastRoomList();
     broadcastRoomState(roomName);
   });
 });
