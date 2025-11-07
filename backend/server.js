@@ -19,7 +19,14 @@ let gameConfig = {
   time: 30,
 };
 let timer = null;
-let gameStats = [];
+let gameStats = [
+  {id: 0, textEntrat: '', indexparaulaActiva: 0},
+  {id: 1, textEntrat: '', indexparaulaActiva: 0},
+  {id: 2, textEntrat: '', indexparaulaActiva: 0},
+  {id: 3, textEntrat: '', indexparaulaActiva: 0},
+  {id: 4, textEntrat: '', indexparaulaActiva: 0},
+  {id: 5, textEntrat: '', indexparaulaActiva: 0}
+];
 let spectators = []
 
 // Function to send the player list to all connected clients
@@ -239,8 +246,8 @@ io.on("connection", (socket) => {
         player.paraules = newEntry.paraules;
       }
     });
-    spectators.forEach(spectate => io.to(spectate.socketId).emit('spectatorGameView', gameStats);)
-    
+    spectators.forEach( (spectate) => io.to(spectate.socketId).emit('spectatorGameView', gameStats))
+  })
     /*gameStats = gameStats.filter((p) => p.id !== newEntry.id);
     gameStats.push(newEntry);
     gameStats.sort((a,b) => b.id - a.id) 
@@ -250,7 +257,7 @@ io.on("connection", (socket) => {
       {id: 2, textEntrat: '', indexparaulaActiva: 0, paraules: ''},
       {id: 3, textEntrat: '', indexparaulaActiva: 0, paraules: ''}
     ]*/
-  })
+  
 
   socket.on("disconnect", () => {
     const player = players.find((p) => p.socketId === socket.id);
