@@ -10,6 +10,7 @@
       :is-admin="isAdmin"
       :jugador="jugadorClient"
     />
+    <button v-if="isAdmin" @click="changeTime">Temps: {{ tempsEstablert }}s</button>
     <!--Botons-->
     <button v-if="isAdmin" v-bind:class="isMajority ? '' : 'disabled'" @click="startGame">
       Començar
@@ -30,6 +31,7 @@ const socket = computed(() => props.socketC)
 const llistaJugadors = computed(() => props.llistaJug)
 const jugadorClient = computed(() => props.jug || {})
 
+const tempsEstablert = ref(60)
 const imReady = ref(false)
 
 // Computed per actualitzar-se quan canviïn les dades
@@ -45,10 +47,32 @@ const isAdmin = computed(() => {
   return jugadorClient.value?.role === 'admin'
 })
 
+function changeTime() {
+  switch (tempsEstablert.value) {
+    case 60:
+      tempsEstablert.value = 90
+      break
+    case 90:
+      tempsEstablert.value = 120
+      break
+    case 120:
+      tempsEstablert.value = 30
+      break
+    case 30:
+      tempsEstablert.value = 60
+      break
+    default:
+      tempsEstablert.value = 60
+  }
+}
+
 //funcions
 function startGame() {
   if (socket.value && jugadorClient.value?.id) {
-    socket.value.emit('startGame', { id: jugadorClient.value.id })
+    socket.value.emit('startGame', {
+      id: jugadorClient.value.id,
+      tempsEstablert: tempsEstablert.value,
+    })
   }
 }
 

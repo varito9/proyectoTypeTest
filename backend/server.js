@@ -16,7 +16,6 @@ let players = [];
 let beingPlayed = false;
 let gameConfig = {
   language: "cat",
-  time: 60,
 };
 let timer = null;
 let gameStats = [
@@ -182,7 +181,7 @@ io.on("connection", (socket) => {
   });
 
   // Listen when the admin starts the game and set unready users as spectators
-  socket.on("startGame", ({ id }) => {
+  socket.on("startGame", ({ id, tempsEstablert }) => {
     const admin = players.find((p) => p.id === id && p.role === "admin");
     if (!admin) return;
 
@@ -193,6 +192,7 @@ io.on("connection", (socket) => {
     });
 
     spectators = players.filter((p) => p.role === "spectator");
+    const tempsDePartida = tempsEstablert || 60;
 
     gameStats = players
       .filter((p) => p.role !== "spectator")
@@ -206,7 +206,9 @@ io.on("connection", (socket) => {
     io.emit("gameStarted", { time: gameConfig.time });
     broadcastPlayerList();
 
-    timer = setTimeout(endGame, gameConfig.time * 1000);
+    timer = setTimeout(() => {
+      endGame();
+    }, tempsDePartida * 1000);
   });
 
   // Listen when points are added to a player

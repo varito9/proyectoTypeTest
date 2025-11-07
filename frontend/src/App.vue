@@ -92,9 +92,10 @@ function tryConn() {
   })
 
   socket.on('gameStarted', (data) => {
+    const temps = data.time
     vista.value = 'game'
-    if (data.time) {
-      tempsInicial.value = data.time
+    if (temps && data) {
+      tempsInicial.value = temps
     }
   })
 
