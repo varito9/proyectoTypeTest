@@ -112,9 +112,7 @@ const isSpectator = computed(() => props.jugador.role === 'spectator')
 const indexJugadorObservat = ref(0)
 const darrersGameStats = ref([])
 //---> filtra i guarda només els jugadors que no son espectadors
-const jugadorsReals = computed(() => {
-  return props.llistaJug.filter(j => j.role !== 'spectator')
-})
+let jugadorsReals = [];
 
 //Funció per controlar a quin jugador espectejar
 function canviarJugadorObservat(direccio) {

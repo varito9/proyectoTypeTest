@@ -96,6 +96,7 @@ function tryConn() {
     if (data.time) {
       tempsInicial.value = data.time
     }
+    jugadorsReals = llistaJug.filter(player => player.role !== 'spectator')
   })
 
   socket.on('gameFinished', (data) => {
