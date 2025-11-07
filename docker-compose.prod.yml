@@ -1,0 +1,79 @@
+# Fichero: docker-compose.prod.yml
+# Descripción: Entorno de producción con Nginx, Backend y MongoDB.
+# Uso: docker-compose -f docker-compose.prod.yml up --build
+
+services:
+  # Nginx actúa como reverse proxy y sirve el frontend estático.
+  nginx:
+    build:
+      context: .
+      dockerfile: nginx.Dockerfile # Asume un Dockerfile de Nginx en la raíz.
+    container_name: trr-nginx-prod
+    # Puerto HTTP estándar
+    ports: 
+      - "80:80" 
+    depends_on:
+      backend:
+        condition: service_started
+    networks:
+      - trr-net
+    restart: unless-stopped
+
+  # Servicio del backend (versión de producción)
+  backend:
+    build: ./backend
+    container_name: trr-backend-prod
+    command: npm run start:prod
+    env_file:
+      - ./.env
+    environment:
+      - NODE_ENV=production
+      # El backend se conectará a 'mongo' por la red interna de Docker.
+      - MONGO_HOST=mongo
+    depends_on:
+      mongo:
+        condition: service_started
+    networks:
+      - trr-net
+    restart: unless-stopped
+
+  # Servicio del frontend (solo para construir la imagen)
+  # Nginx usa esta imagen construida para copiar los archivos estáticos.
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        # Variable para el build de Vite.
+        VITE_NODE_ENV: production
+    container_name: trr-frontend-builder
+    # No se ejecuta como un contenedor persistente.
+
+  # Servicio de la base de datos MongoDB (con autenticación)
+  mongo:
+    image: mongo:6.0 # Versión fija para producción
+    container_name: trr-mongo-prod
+    # Variables para autenticación, leídas desde el .env de producción:
+    environment:
+      # Credenciales del usuario root (para administración)
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_ROOT_USER}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD}
+      # Credenciales y base de datos para la aplicación
+      MONGO_INITDB_DATABASE: ${MONGO_DATABASE}
+      MONGO_INITDB_USERNAME: ${MONGO_USER}
+      MONGO_INITDB_PASSWORD: ${MONGO_PASSWORD}
+    volumes:
+      - mongo-data:/data/db
+    networks:
+      - trr-net
+    restart: unless-stopped
+
+# Definición de la red
+networks:
+  trr-net:
+    driver: bridge
+
+# Definición de los volúmenes para persistencia de datos
+volumes:
+  mongo-data:
+  # mysql-data ya no es necesario

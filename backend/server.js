@@ -5,9 +5,25 @@ const http = require("http");
 const { Server } = require("socket.io");
 require("dotenv").config();
 
+const nodeEnv = process.env.NODE_ENV;
+let port;
+const corsOptions = {};
+
+if (nodeEnv === 'production') {
+  console.log('Running in production mode');
+  port = process.env.PORT || 3001; // El puerto interno para producción
+  // En producción, solo permite peticiones desde la URL del frontend definida en .env
+  corsOptions.origin = process.env.FRONTEND_URL;
+} else {
+  console.log('Running in development mode');
+  port = 3001; // Puerto de desarrollo
+  // En desarrollo, permite cualquier origen
+  corsOptions.origin = "*";
+}
+
 const app = express();
 const server = http.createServer(app);
-const io = new Server(server, { cors: { origin: "*" } });
+const io = new Server(server, { cors: corsOptions });
 
 app.get("/", (req, res) => res.send("Type Racer Royale backend ready 🏁"));
 
@@ -56,20 +72,20 @@ function enviarLlistatJugadors() {
   //Send the updateRanking to everyone
   io.emit('updateRanking', players);
 
-  function compareFN(a,b){
+  function compareFN(a, b) {
     if (a.points > b.points) {
       return -1
-    } else if (b. points > a.points) {
+    } else if (b.points > a.points) {
       return 1
-    } else if (a.points == b.points){
-        if (a.errors > b.errors) {
+    } else if (a.points == b.points) {
+      if (a.errors > b.errors) {
         return 1
       } else if (b.errors > a.errors) {
         return -1
       }
     }
   }
-  
+
 }
 
 // Start listening for server connections
@@ -251,5 +267,4 @@ io.on("connection", (socket) => {
   });
 });
 
-const PORT = process.env.PORT || 3001;
-server.listen(PORT, () => console.log(`http://localhost:${PORT}`));
+server.listen(port, () => console.log(`Server listening on port ${port}`));

@@ -19,20 +19,21 @@
 </template>
 
 <script setup>
-const props = defineProps(['socketC', 'llistaJug', 'isAdmin', 'jugador'])
+import { socket } from '@/socket';
+const props = defineProps(['llistaJug', 'isAdmin', 'jugador'])
 
 // ES BORRA ELS COMPUTED NO FAN FALTA PODEM INDICARLO DIRECTAMENT DESDE props del pare viewLobby
 
 //Functions
 function setAdmin(id) {
-  if (props.socketC && props.isAdmin && props.jugador?.id) {
-    props.socketC.emit('transferAdmin', { adminId: props.jugador.id, newAdminId: id })
+  if (props.isAdmin && props.jugador?.id) {
+    socket.emit('transferAdmin', { adminId: props.jugador.id, newAdminId: id })
   }
 }
 
 function deletePlayer(id) {
-  if (props.socketC && props.isAdmin && props.jugador?.id) {
-    props.socketC.emit('kickPlayer', { adminId: props.jugador.id, playerId: id })
+  if (props.isAdmin && props.jugador?.id) {
+    socket.emit('kickPlayer', { adminId: props.jugador.id, playerId: id })
   }
 }
 </script>

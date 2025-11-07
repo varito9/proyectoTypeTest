@@ -1,0 +1,70 @@
+name: Deploy to Production
+
+on:
+  push:
+    branches:
+      - main # Cambiado de 'main' para las pruebas
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Deploy to server
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USERNAME }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            # Define project path and repo URL
+            PROJECT_PATH="/var/www/html/tr1-type-racer-royale-grup3daw"
+            REPO_URL="https://github.com/${{ github.repository }}.git"
+            BRANCH="main"
+
+            # Clone repo if it doesn't exist
+            if [ ! -d "$PROJECT_PATH" ]; then
+              echo "Cloning repository..."
+              cd /var/www/html/
+              git clone $REPO_URL
+            fi
+
+            # Navigate to project directory
+            cd $PROJECT_PATH
+
+            # Ensure clean working directory before checkout
+            git reset --hard
+            git clean -fd
+
+            # Pull latest changes
+            git checkout $BRANCH
+            git pull origin $BRANCH
+
+            # Create .env file from GitHub Secrets
+            echo "Creating .env file..."
+            # Variables para el backend y docker-compose
+            echo "NODE_ENV=${{ secrets.NODE_ENV }}" > .env
+            echo "PORT=${{ secrets.PORT }}" >> .env
+            echo "FRONTEND_URL=${{ secrets.FRONTEND_URL }}" >> .env
+            # Credenciales de MongoDB (root y usuario de la app)
+            echo "MONGO_ROOT_USER=${{ secrets.MONGO_ROOT_USER }}" >> .env
+            echo "MONGO_ROOT_PASSWORD=${{ secrets.MONGO_ROOT_PASSWORD }}" >> .env
+            echo "MONGO_DATABASE=${{ secrets.MONGO_DATABASE }}" >> .env
+            echo "MONGO_USER=${{ secrets.MONGO_USER }}" >> .env
+            echo "MONGO_PASSWORD=${{ secrets.MONGO_PASSWORD }}" >> .env
+            echo "MONGO_URI=${{ secrets.MONGO_URI }}" >> .env
+
+            # Variable para el build del frontend (Vite)
+            # Tu código usa VITE_BACKEND_URL, no VITE_API_URL o VITE_SOCKET_URL
+            echo "VITE_BACKEND_URL=${{ secrets.FRONTEND_URL }}" >> .env
+
+            # Run docker-compose
+            echo "Stopping any running compose stack (down) and starting docker-compose..."
+            # Tear down any existing stack first to ensure a clean deployment.
+            docker compose -f docker-compose.prod.yml down --remove-orphans || true
+            # Actualiza los servicios: reconstruye las imágenes que han cambiado y reinicia
+            # los contenedores correspondientes. Los datos de las bases de datos se conservan.
+            docker compose -f docker-compose.prod.yml up --build -d --remove-orphans
+
+            # Limpia cualquier otra imagen de Docker que no se esté utilizando.
+            docker image prune -f

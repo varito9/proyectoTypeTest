@@ -5,7 +5,6 @@
   <!-- Llista pel admin-->
   <div>
     <playerList
-      :socket-c="socket"
       :llista-jug="llistaJugadors"
       :is-admin="isAdmin"
       :jugador="jugadorClient"
@@ -21,12 +20,12 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed } from 'vue';
+import { socket } from '@/socket'; // Importamos el socket
 import playerList from './playerList.vue'
 
 //props
-const props = defineProps(['socketC', 'llistaJug', 'jug'])
-const socket = computed(() => props.socketC)
+const props = defineProps(['llistaJug', 'jug'])
 const llistaJugadors = computed(() => props.llistaJug)
 const jugadorClient = computed(() => props.jug || {})
 
@@ -47,14 +46,14 @@ const isAdmin = computed(() => {
 
 //funcions
 function startGame() {
-  if (socket.value && jugadorClient.value?.id) {
-    socket.value.emit('startGame', { id: jugadorClient.value.id })
+  if (jugadorClient.value?.id) {
+    socket.emit('startGame', { id: jugadorClient.value.id })
   }
 }
 
 function toggleReady(id) {
-  if (socket.value && id) {
-    socket.value.emit('setIsReady', { id })
+  if (id) {
+    socket.emit('setIsReady', { id })
   }
 }
 </script>
