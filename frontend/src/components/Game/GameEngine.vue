@@ -41,6 +41,7 @@
 
     <div id="spectator" v-else>
       <!--TODO: MOSTRAR EL NOM DE AQUI ESTA ESPECTEJANT I FER LO DE SCROLL ENTRE USUARIS PER VEURE ALTRES USUARIS NO NOMES AL ADMIN-->
+      <button @click="canviarJugadorObservat('anterior')">◀ Enrere</button>
       <div class="paraules">
         <span
           v-for="(paraula, wordIndex) in estatJugadorObservat.paraules"
@@ -66,6 +67,7 @@
           </template>
         </span>
       </div>
+      <button @click="canviarJugadorObservat('seguent')">Endavant ▶</button>
     </div>
   </div>
 </template>
@@ -106,24 +108,74 @@ let textAnterior = ''
 const acabada = ref(false)
 const isSpectator = computed(() => props.jugador.role === 'spectator')
 
-// escoltem les dades que ens envia el servidor per el espectador
-props.socket.on('spectatorGameView', (gameStats) => {
-  if (!isSpectator.value) return
+//Variables per la vista d'espectador
+const indexJugadorObservat = ref(0)
+const darrersGameStats = ref([])
+//---> filtra i guarda només els jugadors que no son espectadors
+const jugadorsReals = computed(() => {
+  return props.llistaJug.filter(j => j.role !== 'spectator')
+})
 
-  if (gameStats && gameStats.length > 0) {
-    const jugadorObservatStats = gameStats[0]
+//Funció per controlar a quin jugador espectejar
+function canviarJugadorObservat(direccio) {
+  const numJugadors = jugadorsReals.value.length
 
-    estatJugadorObservat.indexParaulaActiva = jugadorObservatStats.indexParaulaActiva
-    estatJugadorObservat.textEntrat = jugadorObservatStats.textEntrat
-
-    estatJugadorObservat.paraules.forEach((paraula, index) => {
-      if (index < jugadorObservatStats.indexParaulaActiva) {
-        paraula.estat = 'completada'
-      } else {
-        paraula.estat = 'pendent'
-      }
-    })
+  if (direccio === 'seguent') {
+    indexJugadorObservat.value++
+    //Si passem del ultim, passem automàticament al primer (per no sortir-nos del array)
+    if (indexJugadorObservat.value >= numJugadors) {
+      indexJugadorObservat.value = 0
+    }
+  } else if (direccio === 'anterior') {
+    indexJugadorObservat.value--
+    //Si passem del primer anem al ultim
+    if (indexJugadorObservat.value < 0) {
+      indexJugadorObservat.value = numJugadors - 1
+    }
   }
+  actualitzarVistaEspectador()
+}
+//Funcio que actualiza la vista de l'espectador
+function actualitzarVistaEspectador() {
+  if (!isSpectator.value) return
+  
+  //Guardem les ultimes dades guardades en una nova variable
+  const gameStats = darrersGameStats.value
+  
+  if (gameStats && gameStats.length > 0 && jugadorsReals.value.length > 0) {
+    
+    const jugadorObjectiu = jugadorsReals.value[indexJugadorObservat.value]
+    
+    // Busquem les dades del jugador observat dins les dades guardades
+    const jugadorObservatStats = gameStats.find(stats => stats.id === jugadorObjectiu.id)
+
+    // Si trobem les dades, les apliquem
+    if (jugadorObservatStats) {
+      estatJugadorObservat.indexParaulaActiva = jugadorObservatStats.indexParaulaActiva
+      estatJugadorObservat.textEntrat = jugadorObservatStats.textEntrat
+      
+      estatJugadorObservat.paraules.forEach((paraula, index) => {
+        if (index < jugadorObservatStats.indexParaulaActiva) {
+          paraula.estat = 'completada'
+        } else {
+          paraula.estat = 'pendent'
+        }
+      })
+    } else { // Si no les trobem, resetejem
+      estatJugadorObservat.indexParaulaActiva = 0
+      estatJugadorObservat.textEntrat = ''
+      estatJugadorObservat.paraules.forEach(p => p.estat = 'pendent')
+    }
+  }
+}
+
+// escoltem les dades que ens envia el servidor per l'espectador
+props.socket.on('spectatorGameView', (gameStats) => {
+  //Actualizem els camps de la variable darrersGameStats segons el que ens envia el servidor
+  darrersGameStats.value = gameStats
+  
+  //Cridem a la funció actualitzar la vista d'espectador
+  actualitzarVistaEspectador()
 })
 
 // 3. FUNCIONS DEL JOC

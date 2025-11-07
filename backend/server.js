@@ -16,7 +16,7 @@ let players = [];
 let beingPlayed = false;
 let gameConfig = {
   language: "cat",
-  time: 30,
+  time: 60,
 };
 let timer = null;
 let gameStats = [];
