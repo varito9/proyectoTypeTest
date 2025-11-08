@@ -81,6 +81,7 @@ const props = defineProps({
   socket: { type: Object, required: true },
   jugador: { type: Object, required: true },
   llistaJug: { type: Array, required: true },
+  roomName: { type: String, required: true },
 })
 
 // 2. VARIABLES DEL JOC
@@ -195,13 +196,13 @@ function validarProgres() {
   if (inputActual.length > textAnterior.length) {
     const indexActual = inputActual.length - 1
     if (inputActual[indexActual] !== paraulaSencera[indexActual]) {
-      props.socket.emit('addErrors', { id: props.jugador.id })
+      props.socket.emit('addErrors', { roomName: props.roomName, id: props.jugador.id })
     }
   }
   textAnterior = inputActual // Comprovem encert de paraula sencera
 
   if (estatDelJoc.textEntrat === paraulaActiva.value.text) {
-    props.socket.emit('addPoints', { id: props.jugador.id })
+    props.socket.emit('addPoints', { roomName: props.roomName, id: props.jugador.id })
 
     paraulaActiva.value.estat = 'completada'
     estatDelJoc.indexParaulaActiva++

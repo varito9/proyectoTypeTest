@@ -9,9 +9,7 @@
     </thead>
     <tbody>
       <tr v-for="player in llistatJugadors" :key="player.id">
-        <td v-if="player.role !== 'spectator'">
-          {{ player.name }}
-        </td>
+        <td v-if="player.role !== 'spectator'">{{ player.name }}</td>
         <td v-if="player.role !== 'spectator'">{{ player.errors }}</td>
         <td v-if="player.role !== 'spectator'">{{ player.points }}</td>
       </tr>

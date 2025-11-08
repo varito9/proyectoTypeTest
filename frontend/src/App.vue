@@ -1,25 +1,63 @@
 <template>
-  <!-- vista de lobby -->
-  <div v-if="vista === 'preGame'">
-    <!-- Un cop entres i no tens nom : Nickname-->
-    <div v-if="!isConnected">
-      <input type="text" v-model="jugador.name" placeholder="Introdueix nom" />
-      <button @click="sendNickname(jugador.name)">Entra</button>
-      <p>Type Racer Royale</p>
-    </div>
-    <!-- Un cop introdueixes el nickname: Lobby-->
-    <div v-else>
-      <viewLobby :socket-c="socket" :llista-jug="jugadors" :jug="jugador" />
+  <div v-if="!isConnected">
+    <h2 class="centrar">Introduce tu nombre</h2>
+    <div class="centro">
+      <input type="text" v-model="jugador.name" placeholder="Tu nombre" />
+      <button @click="sendNickname(jugador.name)">Continuar</button>
     </div>
   </div>
 
-  <!-- vista de joc -->
+  <div v-else-if="!joinedRoom">
+    <h2>Salas disponibles (Públicas)</h2>
+
+    <ul class="room-list">
+      <li v-for="room in rooms" :key="room.name" class="room-item">
+        <div class="room-info">
+          <strong>{{ room.name }}</strong>
+          <span>👥 {{ room.playerCount }} jugadores</span>
+          <span v-if="room.beingPlayed" class="status-playing"> | 🎮 En partida</span>
+        </div>
+        <button @click="joinExistingRoom(room.name)" :disabled="room.beingPlayed">Unirse</button>
+      </li>
+    </ul>
+
+    <hr />
+
+    <h3>Crear nueva sala</h3>
+    <input v-model="roomInput" placeholder="Nombre de la sala" />
+    <label> <input type="checkbox" v-model="isPrivateCreation" /> Sala Privada 🔒 </label>
+    <button @click="createRoom">Crear sala</button>
+
+    <hr />
+
+    <h3>Unirse a Sala Privada con Código</h3>
+    <input v-model="privateCodeInput" placeholder="Código de Acceso (6 digitos)" maxlength="6" />
+    <button @click="joinPrivateRoom">Unirse</button>
+  </div>
+
+  <div v-else-if="vista === 'preGame'">
+    <h2>Sala: {{ currentRoom }}</h2>
+    <viewLobby
+      :socket-c="socket"
+      :llista-jug="jugadors"
+      :is-admin="jugador.role === 'admin'"
+      :jugador="jugador"
+      :room-name="currentRoom"
+      :room-state="roomState"
+    />
+  </div>
+
   <div v-else-if="vista === 'game'">
     <div id="jugador">
       <!-- Div on mostrem la informació de la partida (els textos)-->
       <div id="partida">
         <!--Truquem al game Engine i enviem les props que rebrà aquest component-->
-        <GameEngine :socket="socket" :jugador="jugador" :llista-jug="jugadors" />
+        <GameEngine
+          :socket="socket"
+          :jugador="jugador"
+          :llista-jug="jugadors"
+          :room-name="currentRoom"
+        />
       </div>
       <!--Div on mostrem el temps restant de la partida-->
       <div id="tempsRestant">
@@ -32,14 +70,18 @@
     </div>
   </div>
 
-  <!-- vista de endgame-->
   <div v-else-if="vista === 'endGame'">
+    <h2>Partida terminada</h2>
     <RankingComponent :llista-jug="jugadors" />
+
+    <div>
+      <button @click="leaveRoom" class="btn-leave">Salir de la sala</button>
+      <button @click="returnToLobby">Volver al lobby</button>
+    </div>
   </div>
 </template>
 
 <script setup>
-//imports && exports
 import { ref } from 'vue'
 import { io } from 'socket.io-client'
 import RankingComponent from './components/RankingComponent.vue'
@@ -47,55 +89,79 @@ import viewLobby from './components/PreGame/lobby/viewLobby.vue'
 import GameEngine from './components/Game/GameEngine.vue'
 import TempsRestant from './components/Game/TempsRestant.vue'
 
-//variables
-var socket = null
+let socket = null
 
-const vista = ref('preGame') //preGame, game, endGame
-const isConnected = ref(false) //Depèn de si connecta o no
-const jugador = ref({ name: '', id: null, status: '', role: '' }) //rol: 'ready' | 'notReady'
+const rooms = ref([])
+const vista = ref('preGame')
+const isConnected = ref(false)
+const joinedRoom = ref(false)
+const jugador = ref({ name: '', id: null, role: 'player' })
 const jugadors = ref([])
 const tempsInicial = ref(0)
 
-//sockets
+const currentRoom = ref('')
+const roomInput = ref('')
+
+const roomState = ref(null)
+const isPrivateCreation = ref(false)
+const privateCodeInput = ref('')
+
+// --- CONEXIÓN Y EVENTOS ---
 
 function tryConn() {
-  if (socket !== null && socket.connected) return // Ja està connectat
-
+  if (socket && socket.connected) return
   socket = io('http://localhost:3001')
 
-  socket.on('connect', () => {
-    console.log('Socket connectat')
+  socket.on('playerRegistered', (playerData) => {
+    Object.assign(jugador.value, playerData)
+    isConnected.value = true
+    loadRooms()
   })
 
-  socket.on('setPlayerList', (playerList) => {
-    // Forzar reactividad al crear un nuevo array
-    jugadors.value = Array.isArray(playerList) ? [...playerList] : []
+  socket.on('roomList', (list) => {
+    rooms.value = list
+  })
+  socket.on('roomJoined', ({ roomName }) => {
+    currentRoom.value = roomName
+  })
 
-    // Actualizar jugador actual sin romper la referencia reactiva
-    const actualitzat = jugadors.value.find((j) => j.id === jugador.value.id)
-    if (actualitzat) {
-      Object.assign(jugador.value, actualitzat)
-    } else if (!jugador.value.id && jugadors.value.length > 0) {
-      Object.assign(jugador.value, jugadors.value[jugadors.value.length - 1])
+  socket.on('updateRoomState', (room) => {
+    roomState.value = room
+    jugadors.value = [...room.players]
+    const yo = room.players.find((p) => p.id === jugador.value.id)
+    if (yo) Object.assign(jugador.value, yo)
+  })
+
+  socket.on('updateRanking', (ranking) => {
+    if (vista.value === 'game') {
+      jugadors.value = [...ranking]
     }
-
-    // Actualizar estado de conexión
-    if (!isConnected.value && jugador.value.id && jugador.value.name) {
-      isConnected.value = true
-    }
+  })
+  // ESTO CAMBIA LA VISTA A 'game' CUANDO EL SERVIDOR MANDA EL INICIO
+  socket.on('gameStarted', ({ time }) => {
+    vista.value = 'game' // <--- PUNTO CLAVE
+    iniciarComptador(time)
   })
 
-  //Rebem l'informació que ens envia el server.js de la llista dels jugadors
-  socket.on('updateRanking', (novaLlistaJugadors) => {
-    console.log('Rànquing actualitzat rebut!')
-    jugadors.value = [...novaLlistaJugadors]
+  socket.on('gameFinished', ({ ranking }) => {
+    jugadors.value = [...ranking]
+    vista.value = 'endGame'
   })
 
-  socket.on('gameStarted', (data) => {
-    const temps = data.time
-    vista.value = 'game'
-    if (temps && data) {
-      tempsInicial.value = temps
+  socket.on('kicked', () => {
+    alert('Has sido expulsado de la sala.')
+    resetToRoomList()
+  })
+
+  socket.on('error', ({ message }) => {
+    alert(`Error del servidor: ${message}`)
+    if (joinedRoom.value) {
+      if (currentRoom.value === '' && !roomState.value) {
+        joinedRoom.value = false
+        currentRoom.value = ''
+        vista.value = 'preGame'
+        loadRooms()
+      }
     }
   })
 
@@ -119,6 +185,8 @@ function tryConn() {
   })
 }
 
+// --- ACCIONES DEL USUARIO ---
+
 function sendNickname(nickname) {
   if (!nickname || nickname.trim() === '') return
 
@@ -129,30 +197,152 @@ function sendNickname(nickname) {
 
   tryConn()
 
-  // Esperar a que el socket estigui connectat abans d'enviar
-  if (socket && socket.connected) {
-    // El backend espera 'setPlayerName' amb { name, id }
-    socket.emit('setPlayerName', { name: nickname.trim(), id: playerId })
-  } else {
-    // Si no està connectat, esperar a la connexió
-    socket.on('connect', () => {
-      socket.emit('setPlayerName', { name: nickname.trim(), id: playerId })
-    })
+  socket.emit('setPlayerName', {
+    name: jugador.value.name,
+    id: jugador.value.id,
+  })
+}
+
+function loadRooms() {
+  if (!socket || !socket.connected) tryConn()
+  socket.emit('getRoomList')
+}
+
+function joinExistingRoom(roomName) {
+  if (!socket || !socket.connected) return alert('Socket no conectado. Inténtalo de nuevo.')
+
+  socket.emit('joinRoom', { roomName })
+  currentRoom.value = roomName
+  joinedRoom.value = true
+  vista.value = 'preGame'
+}
+
+function joinPrivateRoom() {
+  if (!socket || !socket.connected) return alert('Socket no conectado. Inténtalo de nuevo.')
+  const code = privateCodeInput.value.trim().toUpperCase()
+
+  if (code.length !== 6) {
+    alert('Por favor, introduce el código de 6 dígitos.')
+    return
   }
+
+  socket.emit('joinRoom', { accessCode: code })
+  joinedRoom.value = true
+  vista.value = 'preGame'
+  privateCodeInput.value = ''
+}
+
+function createRoom() {
+  if (!socket || !socket.connected) return alert('Socket no conectado. Inténtalo de nuevo.')
+  const name = roomInput.value.trim()
+  if (!name) return
+
+  socket.emit('createRoom', {
+    roomName: name,
+    isPrivate: isPrivateCreation.value,
+  })
+  currentRoom.value = name
+  joinedRoom.value = true
+  vista.value = 'preGame'
+}
+
+function iniciarComptador(t) {
+  tempsInicial.value = t
+  const interval = setInterval(() => {
+    if (tempsInicial.value > 0) tempsInicial.value--
+    else clearInterval(interval)
+  }, 1000)
+}
+
+function returnToLobby() {
+  if (!socket || !socket.connected) return alert('Socket no conectado. Recarga la página.')
+  socket.emit('playAgain', { roomName: currentRoom.value, id: jugador.value.id })
+  vista.value = 'preGame'
+  tempsInicial.value = -1
+}
+
+function leaveRoom() {
+  if (!socket || !socket.connected) return alert('Socket no conectado. Recarga la página.')
+
+  // Avisamos al servidor que este jugador abandona la sala
+  socket.emit('leaveRoom', { roomName: currentRoom.value, id: jugador.value.id })
+
+  // Volvemos a la lista de salas
+  resetToRoomList()
+}
+
+function resetToRoomList() {
+  joinedRoom.value = false
+  currentRoom.value = ''
+  vista.value = 'preGame'
+  jugadors.value = []
+  roomState.value = null
+  loadRooms()
 }
 </script>
 
 <style scoped>
-.estat {
-  max-width: 60%;
-  width: 30px;
-  height: auto;
+.centrar {
+  text-align: center;
+}
+.centro {
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 .ready {
   background-color: greenyellow;
 }
-
 .notReady {
   background-color: red;
+}
+.room-list {
+  list-style: none;
+  padding: 0;
+  max-width: 500px;
+  margin: 20px auto;
+}
+.room-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 15px;
+  margin-bottom: 8px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  background-color: #f9f9f9;
+}
+.room-info {
+  display: flex;
+  gap: 15px;
+  align-items: center;
+}
+.room-info strong {
+  font-size: 1.1em;
+}
+.status-playing {
+  color: orange;
+  font-style: italic;
+}
+.room-item button {
+  padding: 5px 10px;
+  background-color: #007bff;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+.room-item button:hover:not(:disabled) {
+  background-color: #0056b3;
+}
+.room-item button:disabled {
+  background-color: #cccccc;
+  cursor: not-allowed;
+}
+hr {
+  margin: 30px 0;
+  border: 0;
+  border-top: 1px solid #eee;
 }
 </style>

@@ -3,7 +3,7 @@ const { error } = require("console");
 const express = require("express");
 const http = require("http");
 const { Server } = require("socket.io");
-require("dotenv").config();
+const { randomUUID } = require("crypto"); // 🔑 Importado para generar códigos
 
 const nodeEnv = process.env.NODE_ENV;
 let port;
@@ -27,72 +27,113 @@ const io = new Server(server, { cors: corsOptions });
 
 app.get("/", (req, res) => res.send("Type Racer Royale backend ready 🏁"));
 
-// DATA
-let players = [];
-let beingPlayed = false;
-let gameConfig = {
-  language: "cat",
-};
-let timer = null;
-let gameStats = [
-  { id: 0, textEntrat: "", indexParaulaActiva: 0 },
-  { id: 1, textEntrat: "", indexParaulaActiva: 0 },
-  { id: 2, textEntrat: "", indexParaulaActiva: 0 },
-  { id: 3, textEntrat: "", indexParaulaActiva: 0 },
-  { id: 4, textEntrat: "", indexParaulaActiva: 0 },
-  { id: 5, textEntrat: "", indexParaulaActiva: 0 },
-];
-let spectators = [];
+let rooms = [];
+// Funció per crear rooms
+function createRoom(roomName, hostPlayer, isPrivate = false) {
+  const room = {
+    name: roomName,
+    beingPlayed: false,
+    config: { language: "cat", time: 5 },
+    players: [hostPlayer],
+    timer: null,
+    isPrivate: isPrivate,
+    accessCode: isPrivate ? randomUUID().substring(0, 6).toUpperCase() : null, // Código de 6 caracteres
 
-// Function to send the player list to all connected clients
-function broadcastPlayerList() {
-  io.emit("setPlayerList", players);
+    // --- NUEVAS PROPIEDADES ---
+    gameStats: [], // Para guardar el progreso de cada jugador
+    spectatorIds: [], // Para saber a quién enviar los datos
+    // -------------------------
+  };
+  rooms.push(room);
+  broadcastRoomList();
+  return room;
 }
 
-// Function to remove a player from the game (not used yet)
-function deletePlayer(playerId) {
-  if (!beingPlayed) return;
+// Trobar la Room per el seu nom
+function findRoom(roomName) {
+  return rooms.find((r) => r.name === roomName);
+}
 
-  const deletingPlayer = players.find((player) => player.id === playerId);
-  if (!deletingPlayer) return;
+// Trobar la Room per el seu codi d'accés
+function findRoomByCode(accessCode) {
+  if (!accessCode) return null;
+  const upperCaseCode = accessCode.toUpperCase();
+  return rooms.find((r) => r.accessCode === upperCaseCode);
+}
 
-  deletingPlayer.role = "spectator";
-  broadcastPlayerList();
+// Enviar l'estat actualitzar de la sala a tots en la sala
+function broadcastRoomState(roomName) {
+  const room = findRoom(roomName);
+  if (room) {
+    const { timer, ...roomState } = room;
+    io.to(roomName).emit("updateRoomState", roomState);
+  }
+}
+
+// Solo enviamos salas públicas en la lista
+function broadcastRoomList() {
+  const roomList = rooms
+    .filter((r) => !r.isPrivate)
+    .map((r) => ({
+      name: r.name,
+      playerCount: r.players.length,
+      beingPlayed: r.beingPlayed,
+    }));
+  io.emit("roomList", roomList);
+}
+
+//Eliminar Rooms sense cap jugador
+function removeEmptyRooms() {
+  const before = rooms.length;
+  rooms = rooms.filter((room) => room.players.length > 0);
+  if (rooms.length !== before) {
+    broadcastRoomList();
+  }
 }
 
 // Function to end the game and send the final ranking
-// TODO: Add error-based ranking
-function endGame() {
-  beingPlayed = false;
+function endGame(roomName) {
+  const room = findRoom(roomName);
+  if (!room) return;
 
-  const ranking = [...players]
-    .filter((player) => player.role !== "spectator")
-    .sort((a, b) => b.points - a.points);
+  room.beingPlayed = false;
 
-  io.emit("gameFinished", { ranking });
-  clearTimeout(timer);
-  //TODO: Escuchar tambien el evento timeEnded que envia el frontendpara terminar la partida, si los dos se ejecutan, se termina la partida
+  //netejem els stats
+  room.gameStats = [];
+  room.spectatorIds = [];
+  // Resetear roles de espectadores que eran players antes del juego
+  room.players.forEach((p) => {
+    if (p.role !== "admin") {
+      p.role = "player";
+    }
+    p.isReady = false;
+  });
+
+  const ranking = [...room.players]
+    .filter((player) => player.role === "player")
+    .sort((a, b) => b.points - a.points || a.errors - b.errors);
+
+  io.to(roomName).emit("gameFinished", { ranking });
+
+  if (room.timer) {
+    clearTimeout(room.timer);
+    room.timer = null;
+  }
+  broadcastRoomState(roomName);
+  broadcastRoomList();
+  removeEmptyRooms();
 }
 
-function enviarLlistatJugadors() {
-  players.sort(compareFN);
-  console.log(players);
-  //Send the updateRanking to everyone
-  io.emit("updateRanking", players);
+// Enviem el rànquing actualitzat
+function broadcastRanking(roomName) {
+  const room = findRoom(roomName);
+  if (!room) return;
 
-  function compareFN(a, b) {
-    if (a.points > b.points) {
-      return -1;
-    } else if (b.points > a.points) {
-      return 1;
-    } else if (a.points == b.points) {
-      if (a.errors > b.errors) {
-        return 1;
-      } else if (b.errors > a.errors) {
-        return -1;
-      }
-    }
-  }
+  const ranking = [...room.players]
+    .filter((p) => p.role !== "spectator")
+    .sort((a, b) => b.points - a.points || a.errors - b.errors);
+
+  io.to(roomName).emit("updateRanking", ranking);
 }
 
 // Start listening for server connections
@@ -103,91 +144,164 @@ io.on("connection", (socket) => {
   socket.on("setPlayerName", ({ name, id }) => {
     if (!name || id === undefined) return;
 
-    if (players.length >= 6) {
-      socket.emit("gameFull", { message: "The lobby is already full." });
-      return;
-    }
-
-    let role = "player";
-    if (players.length === 0) {
-      role = "admin";
-    }
-
-    const player = {
-      // Player Info
+    socket.data.player = {
       id: id,
       socketId: socket.id,
       name: name,
-      role: role, // enum: 'admin', 'player', 'spectator'
-      // States
+      role: "player",
       isReady: false,
-      // Game Stats
       points: 0,
       errors: 0,
     };
 
-    players.push(player);
-    players.sort((a, b) => b.id - a.id);
-
-    if (beingPlayed) {
-      player.role = "spectator";
-      spectators.push(player.id);
-      io.to(player.socketId).emit("spectatorGameView", gameStats);
-    }
-
-    console.log(`User ${player.name} joined with id ${player.id}`);
-    broadcastPlayerList(); // Send updated list to everyone
+    console.log(`Jugador conectado: ${name} (${id})`);
+    socket.emit("playerRegistered", socket.data.player);
   });
 
-  // Listen when the user marks themselves as ready
-  socket.on("setIsReady", ({ id }) => {
-    const changingPlayer = players.find((player) => player.id === id);
-    if (!changingPlayer) return;
+  // Listener para crear sala
+  socket.on("createRoom", ({ roomName, isPrivate = false }) => {
+    const player = socket.data.player;
+    if (!player)
+      return socket.emit("error", { message: "Jugador no registrado." });
+    if (findRoom(roomName))
+      return socket.emit("error", { message: "La sala ya existe." });
 
-    changingPlayer.isReady = !changingPlayer.isReady;
-    players = players.filter((player) => player.id !== changingPlayer.id);
-    players.push(changingPlayer);
-    players.sort((a, b) => b.id - a.id);
+    player.role = "admin";
+    const room = createRoom(roomName, player, isPrivate);
+
+    socket.join(roomName);
+    broadcastRoomState(roomName);
 
     console.log(
-      `Player ${changingPlayer.name} ready: ${changingPlayer.isReady}`
+      `${player.name} creó la sala ${roomName} (Privada: ${isPrivate})`
     );
-    broadcastPlayerList();
   });
 
-  // Admin can configure the game in the lobby
-  socket.on("configGame", ({ id, newConfig }) => {
-    const admin = players.find(
-      (player) => player.id === id && player.role === "admin"
-    );
+  // Listener para unirse a sala (por nombre o código)
+  socket.on("joinRoom", ({ roomName, accessCode }) => {
+    const player = socket.data.player;
+    if (!player)
+      return socket.emit("error", { message: "Jugador no registrado." });
+
+    let room;
+    const codeToSearch = accessCode ? accessCode.toUpperCase() : null;
+
+    if (codeToSearch) {
+      room = findRoomByCode(codeToSearch);
+    } else if (roomName) {
+      room = findRoom(roomName);
+    }
+
+    if (!room)
+      return socket.emit("error", {
+        message: "Sala no encontrada o código incorrecto.",
+      });
+
+    if (room.isPrivate) {
+      if (!codeToSearch || room.accessCode !== codeToSearch) {
+        return socket.emit("error", {
+          message: "Código de acceso incorrecto.",
+        });
+      }
+    } else {
+      if (codeToSearch) {
+        return socket.emit("error", {
+          message: "Error en la unión. Esta sala no requiere código.",
+        });
+      }
+    }
+
+    if (room.players.length >= 6)
+      return socket.emit("error", { message: "La sala está plena" });
+
+    if (room.players.length === 0 && !room.beingPlayed) {
+      player.role = "admin";
+    }
+
+    if (room.beingPlayed) {
+      player.role = "spectator";
+    }
+
+    player.isReady = false;
+    player.points = 0;
+    player.errors = 0;
+
+    room.players.push(player);
+    socket.join(room.name);
+
+    if (codeToSearch) {
+      socket.emit("roomJoined", { roomName: room.name });
+    }
+
+    broadcastRoomState(room.name);
+    console.log(`${player.name} se unió a ${room.name}`);
+  });
+
+  socket.on("getRoomList", () => {
+    broadcastRoomList();
+  });
+
+  // Listo / No Listo
+  socket.on("setIsReady", ({ roomName, id }) => {
+    const room = findRoom(roomName);
+    if (!room) return;
+
+    const player = room.players.find((p) => p.id === id);
+    if (!player) return;
+
+    player.isReady = !player.isReady;
+    broadcastRoomState(roomName);
+  });
+
+  // Configuración de juego (se mantiene)
+  socket.on("configGame", ({ roomName, id, newConfig }) => {
+    const room = findRoom(roomName);
+    if (!room) return;
+
+    const admin = room.players.find((p) => p.id === id && p.role === "admin");
     if (!admin) return;
 
-    gameConfig = newConfig;
-    io.emit("gameConfigured", gameConfig);
+    room.config = newConfig;
+    broadcastRoomState(roomName);
   });
 
-  // Listen when a player is expelled by their playerId
-  socket.on("kickPlayer", ({ adminId, playerId }) => {
-    const admin = players.find((p) => p.id === adminId && p.role === "admin");
-    if (!admin) return;
+  // Expulsar jugador
+  socket.on("kickPlayer", ({ roomName, adminId, playerId }) => {
+    const room = findRoom(roomName);
+    if (!room) return;
 
-    const kickedPlayer = players.find((p) => p.id === playerId);
-    if (!kickedPlayer) return;
-
-    // Notify the frontend that the player has been kicked
-    io.to(kickedPlayer.socketId).emit("kicked");
-
-    players = players.filter((p) => p.id !== playerId);
-    console.log(`Player ${kickedPlayer.name} has been kicked by the admin`);
-    broadcastPlayerList();
-  });
-
-  // Transfer admin rights to a selected user
-  socket.on("transferAdmin", ({ adminId, newAdminId }) => {
-    const currentAdmin = players.find(
+    const admin = room.players.find(
       (p) => p.id === adminId && p.role === "admin"
     );
-    const newAdmin = players.find((p) => p.id === newAdminId);
+    if (!admin) return;
+
+    const kickedPlayer = room.players.find((p) => p.id === playerId);
+    if (!kickedPlayer) return;
+
+    io.sockets.sockets.get(kickedPlayer.socketId)?.leave(roomName);
+    io.to(kickedPlayer.socketId).emit("kicked");
+
+    room.players = room.players.filter((p) => p.id !== playerId);
+
+    if (kickedPlayer.role === "admin" && room.players.length > 0) {
+      room.players[0].role = "admin";
+      io.to(room.players[0].socketId).emit("youAreNowAdmin");
+    }
+
+    removeEmptyRooms();
+
+    broadcastRoomState(roomName);
+  });
+
+  // Transferir Admin
+  socket.on("transferAdmin", ({ roomName, adminId, newAdminId }) => {
+    const room = findRoom(roomName);
+    if (!room) return;
+
+    const currentAdmin = room.players.find(
+      (p) => p.id === adminId && p.role === "admin"
+    );
+    const newAdmin = room.players.find((p) => p.id === newAdminId);
 
     if (!currentAdmin || !newAdmin) return;
 
@@ -195,136 +309,161 @@ io.on("connection", (socket) => {
     newAdmin.role = "admin";
 
     io.to(newAdmin.socketId).emit("youAreNowAdmin");
-
-    console.log(
-      `${currentAdmin.name} has transferred admin rights to ${newAdmin.name}`
-    );
-    broadcastPlayerList();
+    broadcastRoomState(roomName);
   });
 
-  // Listen when the admin starts the game and set unready users as spectators
-  socket.on("startGame", ({ id, tempsEstablert }) => {
-    const admin = players.find((p) => p.id === id && p.role === "admin");
+  // Iniciar juego (se mantiene)
+  socket.on("startGame", ({ roomName, id, tempsEstablert }) => {
+    const room = findRoom(roomName);
+    if (!room) return;
+
+    const admin = room.players.find((p) => p.id === id && p.role === "admin");
     if (!admin) return;
 
-    beingPlayed = true;
+    room.beingPlayed = true;
 
-    players.forEach((p) => {
-      if (!p.isReady) p.role = "spectator";
+    room.players.forEach((p) => {
+      p.points = 0;
+      p.errors = 0;
+      if (p.id === admin.id) {
+        p.isReady = true;
+        p.role = "admin";
+      } else if (!p.isReady) {
+        p.role = "spectator";
+      }
     });
 
-    spectators = players.filter((p) => p.role === "spectator").map((p) => p.id);
-    const tempsDePartida = tempsEstablert || 60;
+    room.spectatorIds = room.players
+      .filter((p) => p.role === "spectator")
+      .map((p) => p.id);
 
-    gameStats = players
+    room.gameStats = room.players
       .filter((p) => p.role !== "spectator")
       .map((p) => ({
         id: p.id,
+        name: p.name, // Añadido para que el espectador sepa de quién es
         textEntrat: "",
         indexParaulaActiva: 0,
-        paraules: [],
+        paraules: [], // Asegúrate de que tu cliente espera esto
       }));
 
-    gameConfig.time = tempsEstablert || 60;
-    io.emit("gameStarted", { time: gameConfig.time });
-    broadcastPlayerList();
+    io.to(roomName).emit("gameStarted", { time: room.config.time });
 
-    timer = setTimeout(() => {
-      endGame();
-    }, tempsDePartida * 1000);
+    room.timer = setTimeout(() => {
+      endGame(roomName);
+    }, room.config.time * 1000);
+
+    broadcastRoomState(roomName);
+    broadcastRoomList();
   });
-  //
-  // Listen when points are added to a player
-  socket.on("addPoints", ({ id }) => {
-    console.log("sumemCorrecte");
-    const player = players.find((p) => p.id === id);
+
+  // Puntos y Errores (se mantienen)
+  socket.on("addPoints", ({ roomName, id }) => {
+    const room = findRoom(roomName);
+    if (!room) return;
+
+    const player = room.players.find((p) => p.id === id);
     if (!player || player.role === "spectator") return;
 
     player.points++;
-    enviarLlistatJugadors();
+    broadcastRanking(roomName);
   });
 
-  // Listen when errors are added to a player
-  socket.on("addErrors", ({ id }) => {
-    console.log("sumemError");
-    const player = players.find((p) => p.id === id);
+  socket.on("addErrors", ({ roomName, id }) => {
+    const room = findRoom(roomName);
+    if (!room) return;
+
+    const player = room.players.find((p) => p.id === id);
     if (!player || player.role === "spectator") return;
 
     player.errors++;
-    enviarLlistatJugadors();
+    broadcastRanking(roomName);
   });
+  // data  conté: {id: 0, textEntrat: '', indexParaulaActiva: 0, paraules: []}
+  socket.on("playerGameStatus", ({ roomName, data }) => {
+    const room = findRoom(roomName);
+    if (!room || !room.beingPlayed) return;
 
-  socket.on("playerGameStatus", ({ data }) => {
-    //rep: {id: 0, textEntrat: '', indexParaulaActiva: 0}
-    const newEntry = data;
-    gameStats.forEach((player) => {
-      if (player.id == newEntry.id) {
-        player.textEntrat = newEntry.textEntrat;
-        player.indexParaulaActiva = newEntry.indexParaulaActiva;
-        player.paraules = newEntry.paraules;
-      }
-    });
-    spectators.forEach((spectatorId) => {
-      const spectatorPlayer = players.find((p) => p.id === spectatorId);
-      if (spectatorPlayer) {
-        io.to(spectatorPlayer.socketId).emit("spectatorGameView", gameStats);
-      }
-    });
-  });
-  //quan l'espectador canvia al jugador que vol mirar
-  socket.on("spectatorChangeView", ({ id }) => {
-    const player = players.find((p) => p.id === id);
-    if (!player) return;
-
-    if (!spectators.includes(player.id)) {
-      spectators.push(player.id);
+    const playerStat = room.gameStats.find((p) => p.id === data.id);
+    if (playerStat) {
+      playerStat.textEntrat = data.textEntrat;
+      playerStat.indexParaulaActiva = data.indexParaulaActiva;
+      playerStat.paraules = data.paraules;
+    } else {
+      return;
     }
 
-    io.to(player.socketId).emit("spectatorGameView", gameStats);
+    // 2. Enviar el estado COMPLETO a todos los espectadores de la sala
+    room.spectatorIds.forEach((spectatorId) => {
+      const spectator = room.players.find((p) => p.id === spectatorId);
+      if (spectator) {
+        io.to(spectator.socketId).emit("spectatorGameView", room.gameStats);
+      }
+    });
   });
-
-  /*gameStats = gameStats.filter((p) => p.id !== newEntry.id);
-    gameStats.push(newEntry);
-    gameStats.sort((a,b) => b.id - a.id) 
-    /* Envio: [
-      {id: 0, textEntrat: '', indexParaulaActiva: 0},
-      {id: 1, textEntrat: '', indexParaulaActiva: 0},
-      {id: 2, textEntrat: '', indexParaulaActiva: 0},
-      {id: 3, textEntrat: '', indexParaulaActiva: 0}
-    ]*/
 
   socket.on("disconnect", () => {
-    const player = players.find((p) => p.socketId === socket.id);
-    if (!player) return;
+    rooms.forEach((room) => {
+      const player = room.players.find((p) => p.socketId === socket.id);
+      if (!player) return;
 
-    console.log(`Player ${player.name} disconnected`);
+      room.spectatorIds = room.spectatorIds.filter((id) => id !== player.id);
+      room.gameStats = room.gameStats.filter((p) => p.id !== player.id);
 
-    if (player.role === "admin") {
-      const newAdmin = players.find((p) => p.id !== player.id);
-      if (newAdmin) {
-        newAdmin.role = "admin";
-        io.to(newAdmin.socketId).emit("youAreNowAdmin"); // opcional
+      room.players = room.players.filter((p) => p.socketId !== socket.id);
 
-        console.log(`new admin ${newAdmin.name}`);
+      if (player.role === "admin" && room.players.length > 0) {
+        room.players[0].role = "admin";
+        io.to(room.players[0].socketId).emit("youAreNowAdmin");
       }
-    }
-    // Lógica de reasignar admin y eliminar jugador
-    players = players.filter((p) => p.socketId !== socket.id);
-    spectators = spectators.filter((sid) => sid !== player.id);
-    broadcastPlayerList();
+
+      removeEmptyRooms();
+
+      broadcastRoomState(room.name);
+      broadcastRoomList();
+    });
+    console.log("Player disconnected");
   });
 
-  // Listen when a user wants to play again after a match
-  socket.on("playAgain", ({ id }) => {
-    const player = players.find((p) => p.id === id);
+  // Jugar de nuevo (se mantiene)
+  socket.on("playAgain", ({ roomName, id }) => {
+    const room = findRoom(roomName);
+    if (!room) return;
+
+    const player = room.players.find((p) => p.id === id);
     if (!player) return;
 
     player.isReady = false;
     player.points = 0;
-    player.role = "player";
-    spectators = spectators.filter((sid) => sid !== id);
+    player.errors = 0;
 
-    broadcastPlayerList();
+    broadcastRoomState(roomName);
+  });
+
+  //socket que escolta quan un jgador es marxa al acabar la partida
+  socket.on("leaveRoom", ({ roomName, id }) => {
+    const room = findRoom(roomName);
+    if (!room) return;
+
+    const player = room.players.find((p) => p.id === id);
+    if (!player) return;
+
+    // Sacamos al jugador
+    room.players = room.players.filter((p) => p.id !== id);
+    socket.leave(roomName);
+
+    console.log(`${player.name} ha salido de la sala ${roomName}`);
+
+    // Si era admin, pasar rol al siguiente jugador
+    if (player.role === "admin" && room.players.length > 0) {
+      room.players[0].role = "admin";
+      io.to(room.players[0].socketId).emit("youAreNowAdmin");
+    }
+
+    // Refrescar estat
+    removeEmptyRooms();
+    broadcastRoomList();
+    broadcastRoomState(roomName);
   });
 });
 
