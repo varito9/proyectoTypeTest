@@ -34,6 +34,15 @@ let gameConfig = {
   language: "cat",
 };
 let timer = null;
+let gameStats = [
+  { id: 0, textEntrat: "", indexParaulaActiva: 0 },
+  { id: 1, textEntrat: "", indexParaulaActiva: 0 },
+  { id: 2, textEntrat: "", indexParaulaActiva: 0 },
+  { id: 3, textEntrat: "", indexParaulaActiva: 0 },
+  { id: 4, textEntrat: "", indexParaulaActiva: 0 },
+  { id: 5, textEntrat: "", indexParaulaActiva: 0 },
+];
+let spectators = [];
 
 // Function to send the player list to all connected clients
 function broadcastPlayerList() {
@@ -120,6 +129,12 @@ io.on("connection", (socket) => {
     players.push(player);
     players.sort((a, b) => b.id - a.id);
 
+    if (beingPlayed) {
+      player.role = "spectator";
+      spectators.push(player.id);
+      io.to(player.socketId).emit("spectatorGameView", gameStats);
+    }
+
     console.log(`User ${player.name} joined with id ${player.id}`);
     broadcastPlayerList(); // Send updated list to everyone
   });
@@ -195,32 +210,37 @@ io.on("connection", (socket) => {
     beingPlayed = true;
 
     players.forEach((p) => {
-      if (!p.isReady) {
-        p.role = "spectator";
-      }
+      if (!p.isReady) p.role = "spectator";
     });
 
+    spectators = players.filter((p) => p.role === "spectator").map((p) => p.id);
     const tempsDePartida = tempsEstablert || 60;
 
-    io.emit("gameStarted", {
-      //QUITO LOS PLAYERS DEBIDO A QUE DEMOMENTO NO UTILIZAMOS ESTA VARIABLE: players,
-      time: tempsDePartida,
-    });
+    gameStats = players
+      .filter((p) => p.role !== "spectator")
+      .map((p) => ({
+        id: p.id,
+        textEntrat: "",
+        indexParaulaActiva: 0,
+        paraules: [],
+      }));
+
+    gameConfig.time = tempsEstablert || 60;
+    io.emit("gameStarted", { time: gameConfig.time });
     broadcastPlayerList();
 
     timer = setTimeout(() => {
       endGame();
     }, tempsDePartida * 1000);
   });
-
+  //
   // Listen when points are added to a player
   socket.on("addPoints", ({ id }) => {
     console.log("sumemCorrecte");
     const player = players.find((p) => p.id === id);
     if (!player || player.role === "spectator") return;
-    players = players.filter((p) => p !== player);
+
     player.points++;
-    players.push(player);
     enviarLlistatJugadors();
   });
 
@@ -229,11 +249,49 @@ io.on("connection", (socket) => {
     console.log("sumemError");
     const player = players.find((p) => p.id === id);
     if (!player || player.role === "spectator") return;
-    players = players.filter((p) => p !== player);
+
     player.errors++;
-    players.push(player);
     enviarLlistatJugadors();
   });
+
+  socket.on("playerGameStatus", ({ data }) => {
+    //rep: {id: 0, textEntrat: '', indexParaulaActiva: 0}
+    const newEntry = data;
+    gameStats.forEach((player) => {
+      if (player.id == newEntry.id) {
+        player.textEntrat = newEntry.textEntrat;
+        player.indexParaulaActiva = newEntry.indexParaulaActiva;
+        player.paraules = newEntry.paraules;
+      }
+    });
+    spectators.forEach((spectatorId) => {
+      const spectatorPlayer = players.find((p) => p.id === spectatorId);
+      if (spectatorPlayer) {
+        io.to(spectatorPlayer.socketId).emit("spectatorGameView", gameStats);
+      }
+    });
+  });
+  //quan l'espectador canvia al jugador que vol mirar
+  socket.on("spectatorChangeView", ({ id }) => {
+    const player = players.find((p) => p.id === id);
+    if (!player) return;
+
+    if (!spectators.includes(player.id)) {
+      spectators.push(player.id);
+    }
+
+    io.to(player.socketId).emit("spectatorGameView", gameStats);
+  });
+
+  /*gameStats = gameStats.filter((p) => p.id !== newEntry.id);
+    gameStats.push(newEntry);
+    gameStats.sort((a,b) => b.id - a.id) 
+    /* Envio: [
+      {id: 0, textEntrat: '', indexParaulaActiva: 0},
+      {id: 1, textEntrat: '', indexParaulaActiva: 0},
+      {id: 2, textEntrat: '', indexParaulaActiva: 0},
+      {id: 3, textEntrat: '', indexParaulaActiva: 0}
+    ]*/
 
   socket.on("disconnect", () => {
     const player = players.find((p) => p.socketId === socket.id);
@@ -252,6 +310,8 @@ io.on("connection", (socket) => {
     }
     // Lógica de reasignar admin y eliminar jugador
     players = players.filter((p) => p.socketId !== socket.id);
+    spectators = spectators.filter((sid) => sid !== id);
+
     broadcastPlayerList();
   });
 
@@ -263,6 +323,8 @@ io.on("connection", (socket) => {
     player.isReady = false;
     player.points = 0;
     player.role = "player";
+    spectators = spectators.filter((sid) => sid !== id);
+
     broadcastPlayerList();
   });
 });

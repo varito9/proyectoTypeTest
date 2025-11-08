@@ -19,7 +19,7 @@
       <!-- Div on mostrem la informació de la partida (els textos)-->
       <div id="partida">
         <!--Truquem al game Engine i enviem les props que rebrà aquest component-->
-        <GameEngine :socket="socket" :jugador="jugador" />
+        <GameEngine :socket="socket" :jugador="jugador" :llista-jug="jugadors" />
       </div>
       <!--Div on mostrem el temps restant de la partida-->
       <div id="tempsRestant">
