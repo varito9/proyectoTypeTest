@@ -148,11 +148,6 @@ function tryConn() {
     vista.value = 'endGame'
   })
 
-  socket.on('kicked', () => {
-    alert('Has sido expulsado de la sala.')
-    resetToRoomList()
-  })
-
   socket.on('error', ({ message }) => {
     alert(`Error del servidor: ${message}`)
     if (joinedRoom.value) {
@@ -165,19 +160,11 @@ function tryConn() {
     }
   })
 
-  socket.on('gameFinished', (data) => {
-    vista.value = 'endGame'
-    // Actualizar la lista de jugadores con el ranking final si es necesario
-    if (data.ranking) {
-      jugadors.value = data.ranking
-    }
-  })
-
   //expulsar al jugador i notificar-lo
   socket.on('kicked', () => {
     alert("Expulsat per l'admin")
     socket.disconnect()
-    window.location.href = '/'
+    resetToRoomList()
   })
   //Transferim l'admin
   socket.on('youAreNowAdmin', () => {
