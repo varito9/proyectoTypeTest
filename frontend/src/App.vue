@@ -83,17 +83,15 @@
 
 <script setup>
 import { ref } from 'vue'
-import { io } from 'socket.io-client'
+import { socket } from './socket.js' // Importa la instancia centralizada
 import RankingComponent from './components/RankingComponent.vue'
 import viewLobby from './components/PreGame/lobby/viewLobby.vue'
 import GameEngine from './components/Game/GameEngine.vue'
 import TempsRestant from './components/Game/TempsRestant.vue'
 
-let socket = null
-
 const rooms = ref([])
 const vista = ref('preGame')
-const isConnected = ref(false)
+const isConnected = ref(false) // Estado de la aplicación: el usuario ha introducido nombre
 const joinedRoom = ref(false)
 const jugador = ref({ name: '', id: null, role: 'player' })
 const jugadors = ref([])
@@ -106,88 +104,100 @@ const roomState = ref(null)
 const isPrivateCreation = ref(false)
 const privateCodeInput = ref('')
 
-// --- CONEXIÓN Y EVENTOS ---
+// --- CONEXIÓN Y EVENTOS (se definen una sola vez) ---
 
-function tryConn() {
-  if (socket && socket.connected) return
-  socket = io('http://localhost:3001')
+socket.on('connect', () => {
+  // Si el jugador ya tenía un nombre (p.ej., por reconexión),
+  // lo re-registramos en el servidor.
+  if (jugador.value.name) {
+    socket.emit('setPlayerName', {
+      name: jugador.value.name,
+      id: jugador.value.id,
+    })
+  }
+})
 
-  socket.on('playerRegistered', (playerData) => {
-    Object.assign(jugador.value, playerData)
-    isConnected.value = true
-    loadRooms()
-  })
+socket.on('playerRegistered', (playerData) => {
+  Object.assign(jugador.value, playerData)
+  isConnected.value = true // El jugador está "logueado"
+  loadRooms()
+})
 
-  socket.on('roomList', (list) => {
-    rooms.value = list
-  })
-  socket.on('roomJoined', ({ roomName }) => {
-    currentRoom.value = roomName
-  })
+socket.on('roomList', (list) => {
+  rooms.value = list
+})
 
-  socket.on('updateRoomState', (room) => {
-    roomState.value = room
-    jugadors.value = [...room.players]
-    const yo = room.players.find((p) => p.id === jugador.value.id)
-    if (yo) Object.assign(jugador.value, yo)
+socket.on('roomJoined', ({ roomName }) => {
+  currentRoom.value = roomName
+})
 
-    if (room.config && room.config.time) {
-      tempsInicial.value = room.config.time
-    }
-  })
+socket.on('updateRoomState', (room) => {
+  roomState.value = room
+  jugadors.value = [...room.players]
+  const yo = room.players.find((p) => p.id === jugador.value.id)
+  if (yo) Object.assign(jugador.value, yo)
 
-  socket.on('updateRanking', (ranking) => {
-    if (vista.value === 'game') {
-      jugadors.value = [...ranking]
-    }
-  })
-  // ESTO CAMBIA LA VISTA A 'game' CUANDO EL SERVIDOR MANDA EL INICIO
-  socket.on('gameStarted', ({ time }) => {
-    vista.value = 'game' // <--- PUNTO CLAVE
-    tempsInicial.value = time
-  })
+  if (room.config && room.config.time) {
+    tempsInicial.value = room.config.time
+  }
+})
 
-  socket.on('gameFinished', ({ ranking }) => {
+socket.on('updateRanking', (ranking) => {
+  if (vista.value === 'game') {
     jugadors.value = [...ranking]
-    vista.value = 'endGame'
-  })
+  }
+})
 
-  socket.on('error', ({ message }) => {
-    alert(`Error del servidor: ${message}`)
-    if (joinedRoom.value) {
-      if (currentRoom.value === '' && !roomState.value) {
-        joinedRoom.value = false
-        currentRoom.value = ''
-        vista.value = 'preGame'
-        loadRooms()
-      }
+socket.on('gameStarted', ({ time }) => {
+  vista.value = 'game'
+  tempsInicial.value = time
+})
+
+socket.on('gameFinished', ({ ranking }) => {
+  jugadors.value = [...ranking]
+  vista.value = 'endGame'
+})
+
+socket.on('error', ({ message }) => {
+  alert(`Error del servidor: ${message}`)
+  if (joinedRoom.value) {
+    if (currentRoom.value === '' && !roomState.value) {
+      joinedRoom.value = false
+      currentRoom.value = ''
+      vista.value = 'preGame'
+      loadRooms()
     }
-  })
+  }
+})
 
-  //expulsar al jugador i notificar-lo
-  socket.on('kicked', () => {
-    alert("Expulsat per l'admin")
-    socket.disconnect()
-    resetToRoomList()
-  })
-  //Transferim l'admin
-  socket.on('youAreNowAdmin', () => {
-    jugador.value.role = 'admin'
-  })
-}
+socket.on('kicked', () => {
+  alert("Expulsat per l'admin")
+  socket.disconnect()
+  resetToRoomList()
+})
+
+socket.on('youAreNowAdmin', () => {
+  jugador.value.role = 'admin'
+})
 
 // --- ACCIONES DEL USUARIO ---
+
+function tryConn() {
+  if (socket.connected) return
+  socket.connect()
+}
 
 function sendNickname(nickname) {
   if (!nickname || nickname.trim() === '') return
 
-  // Generar un ID únic per al jugador abans de connectar
   const playerId = jugador.value.id || Date.now()
   jugador.value.id = playerId
   jugador.value.name = nickname.trim()
 
-  tryConn()
+  tryConn() // Asegura que el socket esté conectando
 
+  // El cliente de socket.io encola los eventos si no está conectado,
+  // así que podemos emitir inmediatamente.
   socket.emit('setPlayerName', {
     name: jugador.value.name,
     id: jugador.value.id,
@@ -195,13 +205,12 @@ function sendNickname(nickname) {
 }
 
 function loadRooms() {
-  if (!socket || !socket.connected) tryConn()
+  tryConn() // Asegura la conexión antes de pedir la lista de salas
   socket.emit('getRoomList')
 }
 
 function joinExistingRoom(roomName) {
-  if (!socket || !socket.connected) return alert('Socket no conectado. Inténtalo de nuevo.')
-
+  if (!socket.connected) return alert('Socket no conectado. Inténtalo de nuevo.')
   socket.emit('joinRoom', { roomName })
   currentRoom.value = roomName
   joinedRoom.value = true
@@ -209,7 +218,7 @@ function joinExistingRoom(roomName) {
 }
 
 function joinPrivateRoom() {
-  if (!socket || !socket.connected) return alert('Socket no conectado. Inténtalo de nuevo.')
+  if (!socket.connected) return alert('Socket no conectado. Inténtalo de nuevo.')
   const code = privateCodeInput.value.trim().toUpperCase()
 
   if (code.length !== 6) {
@@ -224,7 +233,7 @@ function joinPrivateRoom() {
 }
 
 function createRoom() {
-  if (!socket || !socket.connected) return alert('Socket no conectado. Inténtalo de nuevo.')
+  if (!socket.connected) return alert('Socket no conectado. Inténtalo de nuevo.')
   const name = roomInput.value.trim()
   if (!name) return
 
@@ -238,19 +247,15 @@ function createRoom() {
 }
 
 function returnToLobby() {
-  if (!socket || !socket.connected) return alert('Socket no conectado. Recarga la página.')
+  if (!socket.connected) return alert('Socket no conectado. Recarga la página.')
   socket.emit('playAgain', { roomName: currentRoom.value, id: jugador.value.id })
   vista.value = 'preGame'
   tempsInicial.value = -1
 }
 
 function leaveRoom() {
-  if (!socket || !socket.connected) return alert('Socket no conectado. Recarga la página.')
-
-  // Avisamos al servidor que este jugador abandona la sala
+  if (!socket.connected) return alert('Socket no conectado. Recarga la página.')
   socket.emit('leaveRoom', { roomName: currentRoom.value, id: jugador.value.id })
-
-  // Volvemos a la lista de salas
   resetToRoomList()
 }
 
