@@ -12,7 +12,7 @@ const corsOptions = {};
 if (nodeEnv === "production") {
   console.log("Running in production mode");
   port = process.env.PORT || 3001; // El puerto interno para producción
-  corsOptions.origin = process.env.FRONTEND_URL;
+  corsOptions.origin = process.env.FRONTEND_URL || "https://magictyperoyale.daw.inspedralbes.cat";
 } else {
   console.log("Running in development mode");
   port = 3001; // Puerto de desarrollo

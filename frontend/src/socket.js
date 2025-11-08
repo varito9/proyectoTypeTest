@@ -13,5 +13,4 @@ const URL = isProduction
 
 export const socket = io(URL, {
     autoConnect: false, // Evita que se conecte automáticamente al cargar la página.
-    transports: ['websocket'], // Forzamos el uso de WebSockets para mayor eficiencia.
 })
