@@ -13,7 +13,7 @@ if (nodeEnv === "production") {
   console.log("Running in production mode");
   port = process.env.PORT || 3001; // El puerto interno para producción
   // En producción, solo permite peticiones desde la URL del frontend definida en .env
-  corsOptions.origin = process.env.FRONTEND_URL;
+  corsOptions.origin = "*";
 } else {
   console.log("Running in development mode");
   port = 3001; // Puerto de desarrollo
