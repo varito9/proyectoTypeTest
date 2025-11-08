@@ -33,7 +33,7 @@ function createRoom(roomName, hostPlayer, isPrivate = false) {
   const room = {
     name: roomName,
     beingPlayed: false,
-    config: { language: "cat", time: 5 },
+    config: { language: "cat", time: 60 },
     players: [hostPlayer],
     timer: null,
     isPrivate: isPrivate,
@@ -116,7 +116,7 @@ function endGame(roomName) {
   io.to(roomName).emit("gameFinished", { ranking });
 
   if (room.timer) {
-    clearTimeout(room.timer);
+    clearInterval(room.timer);
     room.timer = null;
   }
   broadcastRoomState(roomName);
@@ -313,7 +313,7 @@ io.on("connection", (socket) => {
   });
 
   // Iniciar juego (se mantiene)
-  socket.on("startGame", ({ roomName, id, tempsEstablert }) => {
+  socket.on("startGame", ({ roomName, id }) => {
     const room = findRoom(roomName);
     if (!room) return;
 
@@ -347,11 +347,23 @@ io.on("connection", (socket) => {
         paraules: [], // Asegúrate de que tu cliente espera esto
       }));
 
-    io.to(roomName).emit("gameStarted", { time: room.config.time });
+    let tempsRestant = room.config.time;
 
-    room.timer = setTimeout(() => {
-      endGame(roomName);
-    }, room.config.time * 1000);
+    io.to(roomName).emit("gameStarted", { time: tempsRestant });
+
+    if (room.timer) {
+      clearInterval(room.timer);
+    }
+
+    room.timer = setInterval(() => {
+      tempsRestant--;
+
+      if (tempsRestant <= 0) {
+        endGame(roomName);
+      } else {
+        io.to(roomName).emit("updateTime", { time: tempsRestant });
+      }
+    }, 1000);
 
     broadcastRoomState(roomName);
     broadcastRoomList();

@@ -33,7 +33,7 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { computed } from 'vue'
 import playerList from './playerList.vue'
 
 const props = defineProps(['socketC', 'llistaJug', 'jugador', 'roomName', 'roomState'])
@@ -41,7 +41,13 @@ const socket = computed(() => props.socketC)
 const llistaJugadors = computed(() => props.llistaJug)
 const jugadorClient = computed(() => props.jugador || {})
 
-const tempsEstablert = ref(60)
+// Aquest valor ara es llegeix de les props que venen del servidor
+const tempsEstablert = computed(() => {
+  if (props.roomState && props.roomState.config) {
+    return props.roomState.config.time
+  }
+  return 60 // Un valor per defecte si la prop encara no ha arribat
+})
 const imReady = computed(() => jugadorClient.value.isReady)
 const currentRoomState = computed(() => props.roomState || {})
 
@@ -70,21 +76,36 @@ const isMajority = computed(() => {
 const isAdmin = computed(() => jugadorClient.value.role === 'admin')
 
 function changeTime() {
-  switch (tempsEstablert.value) {
+  let newTime = 60
+  const currentTime = tempsEstablert.value
+
+  switch (currentTime) {
     case 60:
-      tempsEstablert.value = 90
+      newTime = 90
       break
     case 90:
-      tempsEstablert.value = 120
+      newTime = 120
       break
     case 120:
-      tempsEstablert.value = 30
+      newTime = 30
       break
     case 30:
-      tempsEstablert.value = 60
+      newTime = 60
       break
     default:
-      tempsEstablert.value = 60
+      newTime = 60
+  }
+
+  if (socket.value && socket.value.connected && isAdmin.value) {
+    socket.value.emit('configGame', {
+      roomName: props.roomName,
+      id: jugadorClient.value.id,
+      newConfig: {
+        // Asegúrate de enviar la config completa (incluyendo idioma)
+        language: props.roomState.config.language || 'cat',
+        time: newTime,
+      },
+    })
   }
 }
 

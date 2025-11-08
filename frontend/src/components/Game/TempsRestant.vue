@@ -5,55 +5,36 @@
 </template>
 
 <script setup>
-// CANVI: Importem 'onMounted' i 'onUnmounted'
-import { ref, onMounted, onUnmounted } from 'vue';
+import { ref, onUnmounted, watch } from 'vue'
 
-// 1. Definim les dades que rebem del pare (App.vue)
+// Definim les dades que rebem del pare (App.vue)
 const props = defineProps({
   tempsInicial: {
     type: Number,
-    required: true
+    required: true,
   },
   socket: { type: Object, required: true },
-});
+})
 
-// 2. Variables del component
-const tempsRestant = ref(0); //Temps restant
-let timerInstance = null; //Variable per guardar l'interval
+const tempsRestant = ref(props.tempsInicial)
 
-// 'onMounted', aquesta part del codi s'executa quan es carrega el component
-onMounted(() => {
-  if (props.tempsInicial > 0) {
-    iniciarComptador(props.tempsInicial);
-  }
-});
+// 'watch' per actualitzar el temps si la prop canvia així agafa el nou temps quan comença la partida
 
-// 'onUnmounted' quan el component desapareix executem aquesta part del codi
+watch(
+  () => props.tempsInicial,
+  (newTime) => {
+    tempsRestant.value = newTime
+  },
+)
+//ESCOLTEM EL SERVIDOR
+props.socket.on('updateTime', ({ time }) => {
+  tempsRestant.value = time
+})
+
+// Netegem el listener
 onUnmounted(() => {
-  pararComptador();
-});
-
-// Aquesta funció és gairebé idèntica a la que tenies
-function iniciarComptador(tempsInici) {
-  pararComptador(); //Parem el comptador per si de cas 
-  tempsRestant.value = tempsInici; //reiniciem el temps restant amb el valor del temps inicial (60)
-
-  //Creem un interval per anar restant cada cop 1s al temps total  
-  timerInstance = setInterval(() => {
-    if (tempsRestant.value > 0) {
-      tempsRestant.value--;
-    } else { //Quan s'acaba el temps
-      pararComptador(); // Parem el set interval
-      props.socket.emit('timeEnded'); // Avisem al servidor amb un emit de 'timeEnded'
-    }
-  }, 1000);
-}
-
-// Funció per netejar l'interval
-function pararComptador() {
-  clearInterval(timerInstance);
-  timerInstance = null;
-}
+  props.socket.off('updateTime')
+})
 </script>
 
 <style scoped>

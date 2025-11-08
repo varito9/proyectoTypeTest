@@ -266,6 +266,7 @@ function getSpectatorClasseLletra(indexLletra, paraulaSencera) {
 function playerGameStatus() {
   // ... (sense canvis aquí) ...
   props.socket.emit('playerGameStatus', {
+    roomName: props.roomName,
     data: {
       id: props.jugador.id,
       textEntrat: estatDelJoc.textEntrat,

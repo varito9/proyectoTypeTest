@@ -130,6 +130,10 @@ function tryConn() {
     jugadors.value = [...room.players]
     const yo = room.players.find((p) => p.id === jugador.value.id)
     if (yo) Object.assign(jugador.value, yo)
+
+    if (room.config && room.config.time) {
+      tempsInicial.value = room.config.time
+    }
   })
 
   socket.on('updateRanking', (ranking) => {
@@ -140,7 +144,7 @@ function tryConn() {
   // ESTO CAMBIA LA VISTA A 'game' CUANDO EL SERVIDOR MANDA EL INICIO
   socket.on('gameStarted', ({ time }) => {
     vista.value = 'game' // <--- PUNTO CLAVE
-    iniciarComptador(time)
+    tempsInicial.value = time
   })
 
   socket.on('gameFinished', ({ ranking }) => {
@@ -231,14 +235,6 @@ function createRoom() {
   currentRoom.value = name
   joinedRoom.value = true
   vista.value = 'preGame'
-}
-
-function iniciarComptador(t) {
-  tempsInicial.value = t
-  const interval = setInterval(() => {
-    if (tempsInicial.value > 0) tempsInicial.value--
-    else clearInterval(interval)
-  }, 1000)
 }
 
 function returnToLobby() {
