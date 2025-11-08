@@ -9,7 +9,7 @@
     </div>
     <!-- Un cop introdueixes el nickname: Lobby-->
     <div v-else>
-      <viewLobby :llista-jug="jugadors" :jug="jugador" />
+      <viewLobby :socket-c="socket" :llista-jug="jugadors" :jug="jugador" />
     </div>
   </div>
 
@@ -40,24 +40,28 @@
 
 <script setup>
 //imports && exports
-import { ref, onMounted, onUnmounted } from 'vue'
-import { socket } from '@/socket' // Importamos el socket centralizado
+import { ref } from 'vue'
+import { io } from 'socket.io-client'
 import RankingComponent from './components/RankingComponent.vue'
 import viewLobby from './components/PreGame/lobby/viewLobby.vue'
 import GameEngine from './components/Game/GameEngine.vue'
 import TempsRestant from './components/Game/TempsRestant.vue'
 
 //variables
+var socket = null
+
 const vista = ref('preGame') //preGame, game, endGame
 const isConnected = ref(false) //Depèn de si connecta o no
 const jugador = ref({ name: '', id: null, status: '', role: '' }) //rol: 'ready' | 'notReady'
 const jugadors = ref([])
 const tempsInicial = ref(0)
 
-// --- GESTIÓN DE EVENTOS DEL SOCKET ---
-// Estos listeners se activan una vez y escuchan durante toda la vida del componente.
-onMounted(() => {
-  socket.connect() // Conectamos el socket
+//sockets
+
+function tryConn() {
+  if (socket !== null && socket.connected) return // Ja està connectat
+
+  socket = io('http://localhost:3001')
 
   socket.on('connect', () => {
     console.log('Socket connectat')
@@ -113,18 +117,7 @@ onMounted(() => {
   socket.on('youAreNowAdmin', () => {
     jugador.value.role = 'admin'
   })
-})
-
-// Nos aseguramos de limpiar los listeners cuando el componente se destruye
-onUnmounted(() => {
-  socket.off('connect')
-  socket.off('setPlayerList')
-  socket.off('updateRanking')
-  socket.off('gameStarted')
-  socket.off('gameFinished')
-  socket.off('kicked')
-  socket.off('youAreNowAdmin')
-})
+}
 
 function sendNickname(nickname) {
   if (!nickname || nickname.trim() === '') return
@@ -134,8 +127,18 @@ function sendNickname(nickname) {
   jugador.value.id = playerId
   jugador.value.name = nickname.trim()
 
-  socket.emit('setPlayerName', { name: nickname.trim(), id: playerId })
-  isConnected.value = true
+  tryConn()
+
+  // Esperar a que el socket estigui connectat abans d'enviar
+  if (socket && socket.connected) {
+    // El backend espera 'setPlayerName' amb { name, id }
+    socket.emit('setPlayerName', { name: nickname.trim(), id: playerId })
+  } else {
+    // Si no està connectat, esperar a la connexió
+    socket.on('connect', () => {
+      socket.emit('setPlayerName', { name: nickname.trim(), id: playerId })
+    })
+  }
 }
 </script>
 
