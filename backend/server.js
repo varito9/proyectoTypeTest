@@ -294,8 +294,7 @@ io.on("connection", (socket) => {
     }
     // Lógica de reasignar admin y eliminar jugador
     players = players.filter((p) => p.socketId !== socket.id);
-    spectators = spectators.filter((sid) => sid !== id);
-
+    spectators = spectators.filter((sid) => sid !== player.id);
     broadcastPlayerList();
   });
 
