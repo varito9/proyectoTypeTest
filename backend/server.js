@@ -28,6 +28,45 @@ const io = new Server(server, { cors: corsOptions });
 app.get("/", (req, res) => res.send("Type Racer Royale backend ready 🏁"));
 
 let rooms = [];
+const mageDefinitions = [
+  {
+    name: "Mag de Foc",
+    powerUp: "Ignició",
+    description: "Posa tilde a totes les lletres",
+  },
+  {
+    name: "Mag de Gel",
+    powerUp: "Congelar",
+    description: "Congela l'input no saps en quina palabra et trobes",
+  },
+  {
+    name: "Mag d'Aigua",
+    powerUp: "Tsunami",
+    description:
+      "Si no escrius la paraula que toca tens que tornar a escriure tota la frase",
+  },
+  {
+    name: "Mag Oscur",
+    powerUp: "Apagón",
+    description: "Torna tota la pantalla molt oscura ",
+  },
+  {
+    name: "Mag de Llum",
+    powerUp: "Flash",
+    description: "Ilumina la pantalla de forma intermitent",
+  },
+  {
+    name: "Mag de Jungla",
+    powerUp: "Enredadera",
+    description: "Posa a tota una paraula plena de caràcters especials",
+  },
+];
+
+//Funció per sortejar als mags
+function getRandomMage() {
+  return mageDefinitions[Math.floor(Math.random() * mageDefinitions.length)];
+}
+
 // Funció per crear rooms
 function createRoom(roomName, hostPlayer, isPrivate = false) {
   const room = {
@@ -107,6 +146,7 @@ function endGame(roomName) {
       p.role = "player";
     }
     p.isReady = false;
+    p.debuff = { type: null, duration: 0 };
   });
 
   const ranking = [...room.players]
@@ -152,6 +192,12 @@ io.on("connection", (socket) => {
       isReady: false,
       points: 0,
       errors: 0,
+
+      //powerups
+      mage: null,
+      powerUpEarned: false,
+      correctWordsInARow: 0,
+      debuff: { type: null, duration: 0 },
     };
 
     console.log(`Jugador conectado: ${name} (${id})`);
@@ -325,11 +371,21 @@ io.on("connection", (socket) => {
     room.players.forEach((p) => {
       p.points = 0;
       p.errors = 0;
+
+      p.powerUpEarned = false;
+      p.correctWordsInARow = 0;
+      p.debuff = { type: null, duration: 0 }; // Reseteja debuff
+      p.mage = null;
+
       if (p.id === admin.id) {
         p.isReady = true;
         p.role = "admin";
       } else if (!p.isReady) {
         p.role = "spectator";
+      }
+
+      if (p.role !== "spectator") {
+        p.mage = getRandomMage();
       }
     });
 
@@ -356,6 +412,16 @@ io.on("connection", (socket) => {
     }
 
     room.timer = setInterval(() => {
+      room.players.forEach((p) => {
+        if (p.debuff.duration > 0) {
+          p.debuff.duration--; // Resta 1 segon
+          if (p.debuff.duration === 0) {
+            p.debuff.type = null;
+            io.to(p.socketId).emit("debuffEnded"); // Avisa al client que s'ha acabat
+          }
+        }
+      });
+
       tempsRestant--;
 
       if (tempsRestant <= 0) {
@@ -377,6 +443,15 @@ io.on("connection", (socket) => {
     const player = room.players.find((p) => p.id === id);
     if (!player || player.role === "spectator") return;
 
+    if (!player.powerUpEarned) {
+      player.correctWordsInARow++;
+
+      if (player.correctWordsInARow === 5) {
+        player.powerUpEarned = true;
+        io.to(player.socketId).emit("powerUpReady", player.mage);
+      }
+    }
+
     player.points++;
     broadcastRanking(roomName);
   });
@@ -389,8 +464,51 @@ io.on("connection", (socket) => {
     if (!player || player.role === "spectator") return;
 
     player.errors++;
+    player.correctWordsInARow = 0;
+
+    if (player.debuff.type === "Tsunami") {
+      player.debuff.type = null;
+      player.debuff.duration = 0;
+
+      // Avisa al client que ha de resetejar el seu progrés
+      io.to(player.socketId).emit("tsunamiHit");
+      io.to(player.socketId).emit("debuffEnded");
+    }
+
     broadcastRanking(roomName);
   });
+
+  //Us de powerUps
+  socket.on("usePowerUp", ({ roomName, id }) => {
+    const room = findRoom(roomName);
+    if (!room) return;
+
+    const attacker = room.players.find((p) => p.id === id);
+    if (!attacker || !attacker.mage) return;
+
+    // Trobar objectius (tots menys l'atacant i espectadors)
+    const targets = room.players.filter(
+      (p) => p.id !== id && p.role !== "spectator" && p.debuff.type === null // No atacar a algú que ja està sota un efecte
+    );
+
+    if (targets.length === 0) return;
+
+    const target = targets[Math.floor(Math.random() * targets.length)];
+
+    const powerUpType = attacker.mage.powerUp;
+    const durationInSeconds = 5;
+
+    target.debuff = { type: powerUpType, duration: durationInSeconds };
+
+    io.to(target.socketId).emit("debuffReceived", {
+      type: powerUpType,
+      duration: durationInSeconds * 1000,
+    });
+
+    // 6. Avisar a l'atacant que el seu power-up s'ha utilitzat
+    io.to(attacker.socketId).emit("powerUpUsed");
+  });
+
   // data  conté: {id: 0, textEntrat: '', indexParaulaActiva: 0, paraules: []}
   socket.on("playerGameStatus", ({ roomName, data }) => {
     const room = findRoom(roomName);
