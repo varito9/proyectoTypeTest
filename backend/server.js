@@ -496,7 +496,7 @@ io.on("connection", (socket) => {
     const target = targets[Math.floor(Math.random() * targets.length)];
 
     const powerUpType = attacker.mage.powerUp;
-    const durationInSeconds = 5;
+    const durationInSeconds = 10;
 
     target.debuff = { type: powerUpType, duration: durationInSeconds };
 

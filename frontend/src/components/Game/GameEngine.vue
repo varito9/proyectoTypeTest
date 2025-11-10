@@ -283,20 +283,21 @@ function validarProgres() {
   // ... (sense canvis aquí) ...
   if (acabada.value) return
 
-  estatDelJoc.textEntrat = estatDelJoc.textEntrat.toLowerCase()
+  const paraulaObjectiu = getTexteParaulaActiva()
 
+  estatDelJoc.textEntrat = estatDelJoc.textEntrat.toLowerCase()
   const inputActual = estatDelJoc.textEntrat
-  const paraulaSencera = paraulaActiva.value.text // Comprovem errors
 
   if (inputActual.length > textAnterior.length) {
     const indexActual = inputActual.length - 1
-    if (inputActual[indexActual] !== paraulaSencera[indexActual]) {
+
+    if (inputActual[indexActual] !== paraulaObjectiu[indexActual]) {
       props.socket.emit('addErrors', { roomName: props.roomName, id: props.jugador.id })
     }
   }
-  textAnterior = inputActual // Comprovem encert de paraula sencera
+  textAnterior = inputActual
 
-  if (estatDelJoc.textEntrat === paraulaActiva.value.text) {
+  if (estatDelJoc.textEntrat === paraulaObjectiu) {
     props.socket.emit('addPoints', { roomName: props.roomName, id: props.jugador.id })
 
     paraulaActiva.value.estat = 'completada'
@@ -311,28 +312,31 @@ function validarProgres() {
       acabada.value = true
     }
   }
-
   playerGameStatus()
 }
 
 // 4. Funció que afegeix estils a cada lletra
 function getClasseLletra(indexLletra) {
-  // ... (sense canvis aquí) ...
-  const lletraEsperada = paraulaActiva.value.text[indexLletra]
-  const lletraIntroduida = estatDelJoc.textEntrat[indexLletra] // Si l'usuari encara no ha escrit aquesta lletra
+  // AFEGIM AQUESTA LÍNIA
+  const paraulaObjectiu = getTexteParaulaActiva() // Consulta la paraula (amb o sense tildes)
 
+  // CANVIEM "paraulaActiva.value.text" per "paraulaObjectiu"
+  const lletraEsperada = paraulaObjectiu[indexLletra]
+  const lletraIntroduida = estatDelJoc.textEntrat[indexLletra]
+
+  // Si l'usuari encara no ha escrit aquesta lletra
   if (lletraIntroduida === undefined) {
-    // Si és just la següent lletra que toca escriure, la marquem com a "cursor"
     if (indexLletra === estatDelJoc.textEntrat.length) {
       return 'lletra-actual'
-    } // Si són lletres futures, no tenen estil
+    }
     return 'lletra-noArribada'
-  } // Si l'usuari ja ha escrit aquesta lletra
+  }
 
+  // Si l'usuari ja ha escrit aquesta lletra
   if (lletraIntroduida === lletraEsperada) {
-    return 'lletra-correcta' // Coincideix
+    return 'lletra-correcta' // Ara 'á' === 'á' (Correcte!)
   } else {
-    return 'lletra-incorrecta' // No coincideix
+    return 'lletra-incorrecta' // Ara 'a' !== 'á' (Incorrecte!)
   }
 }
 
@@ -369,6 +373,19 @@ function playerGameStatus() {
       paraules: estatDelJoc.paraules,
     },
   })
+}
+
+//Funció per definir el text de la Paraula Activa per posar les tildes
+function getTexteParaulaActiva() {
+  const textOriginal = paraulaActiva.value.text
+
+  // Si el debuff Ignicio está actiu, retorna la versió amb tildes
+  if (debuffState.isActive && debuffState.type === 'Ignicio') {
+    return textOriginal.split('').map(posarTildes).join('')
+  }
+
+  // Si no, retorna el text normal
+  return textOriginal
 }
 
 function usePowerUp() {
@@ -554,7 +571,7 @@ function getDisplayLetter(lletra, index) {
   }
 }
 
-/* Efecte 'Purificar' (Mag de Gel) */
+/* Efecte 'Congelar' (Mag de Gel) */
 /* Amaga el fons de la paraula actual */
 #game-engine.Congelar .paraula.actual {
   background-color: transparent;
