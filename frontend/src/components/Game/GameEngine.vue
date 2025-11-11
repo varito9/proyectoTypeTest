@@ -1,16 +1,24 @@
 <template>
   <div id="game-engine" :class="debuffState.isActive ? debuffState.type : ''">
-    <!-- Modificació per els efectes visuals Apagon Y Flash -->
+    <!-- Notificació -->
+    <div v-if="notification" class="notification-overlay">
+      <div class="notification-content">
+        {{ notification }}
+      </div>
+    </div>
+
+    <!-- Overlay de debuff -->
     <div
       class="debuff-overlay"
       v-if="debuffState.isActive && (debuffState.type === 'Apagon' || debuffState.type === 'Flash')"
     ></div>
 
+    <!-- Vista del jugador -->
     <div id="player" v-if="!isSpectator">
       <div class="mage-info" v-if="jugador.mage">
         <h3>Ets: {{ jugador.mage.name }}</h3>
         <p>
-          <strong>Power-up (5 acerts seguits):</strong>
+          <strong>Power-up (1 encert seguit):</strong>
           {{ jugador.mage.powerUp }} - <em>{{ jugador.mage.description }}</em>
         </p>
       </div>
@@ -21,31 +29,29 @@
         </button>
       </div>
 
-      <h2>Escriu les paraules següents:</h2>
+      <h2>Escriu la paraula següent:</h2>
 
-      <div class="paraules">
-        <span
-          v-for="(paraula, wordIndex) in estatDelJoc.paraules"
-          :key="wordIndex"
-          class="paraula"
-          :class="{
-            completada: paraula.estat === 'completada',
-            actual: wordIndex === estatDelJoc.indexParaulaActiva,
-          }"
-        >
-          <template v-if="wordIndex === estatDelJoc.indexParaulaActiva">
-            <span
-              v-for="(lletra, letterIndex) in paraula.text.split('')"
-              :key="letterIndex"
-              :class="getClasseLletra(letterIndex)"
-            >
-              {{ getDisplayLetter(lletra, letterIndex) }}
-            </span>
-          </template>
-
-          <template v-else> {{ getDisplayWord(paraula.text) }} </template>
+      <div class="paraules" v-if="paraulaActual">
+        <span class="paraula actual">
+          <span
+            v-for="(lletra, letterIndex) in paraulaActual.text.split('')"
+            :key="letterIndex"
+            :class="getClasseLletra(letterIndex)"
+          >
+            {{ getDisplayLetter(lletra, letterIndex) }}
+          </span>
         </span>
       </div>
+
+      <div v-else-if="estatDelJoc.paraules.length > 0 && !acabada">
+        Carregant següent paraula...
+      </div>
+
+      <div v-else-if="acabada">
+        🎉 Has completat el conjur! Esperant la resta de jugadors... 🎉
+      </div>
+
+      <div v-else>Carregant conjur...</div>
 
       <input
         v-model="estatDelJoc.textEntrat"
@@ -54,11 +60,12 @@
         placeholder="Escriu aquí..."
         class="inputJoc"
         autofocus
+        :disabled="acabada"
       />
     </div>
 
+    <!-- Vista d’espectador -->
     <div id="spectator" v-else>
-      <!--TODO: MOSTRAR EL NOM DE AQUI ESTA ESPECTEJANT I FER LO DE SCROLL ENTRE USUARIS PER VEURE ALTRES USUARIS NO NOMES AL ADMIN-->
       <button @click="canviarJugadorObservat('anterior')">◀ Enrere</button>
       <div class="paraules">
         <span
@@ -91,32 +98,20 @@
 </template>
 
 <script setup>
-// Imports necessaris per a aquest component
-import { ref, reactive, computed } from 'vue'
+import { ref, reactive, computed, watch } from 'vue'
 
-// 1. DEFINIM LES PROPS (dades que rebem del component pare: App.vue)
+// 🧩 PROPS
 const props = defineProps({
   socket: { type: Object, required: true },
   jugador: { type: Object, required: true },
   llistaJug: { type: Array, required: true },
   roomName: { type: String, required: true },
+  spellText: { type: Array, required: true },
 })
 
-// 2. VARIABLES DEL JOC
+// ⚙️ ESTATS PRINCIPALS
 const estatDelJoc = reactive({
-  paraules: [
-    { text: 'gat', estat: 'pendent' },
-    { text: 'gos', estat: 'pendent' },
-    { text: 'taula', estat: 'pendent' },
-    { text: 'cadira', estat: 'pendent' },
-    { text: 'cotxe', estat: 'pendent' },
-    { text: 'cotxe', estat: 'pendent' },
-    { text: 'magia', estat: 'pendent' },
-    { text: 'poder', estat: 'pendent' },
-    { text: 'foc', estat: 'pendent' },
-    { text: 'aigua', estat: 'pendent' },
-    { text: 'aire', estat: 'pendent' },
-  ],
+  paraules: [],
   indexParaulaActiva: 0,
   textEntrat: '',
 })
@@ -127,243 +122,153 @@ const powerUpState = reactive({
   name: '',
 })
 
-// Estat dels Debuffs (atacs rebuts)
 const debuffState = reactive({
   isActive: false,
   type: null,
   duration: 0,
 })
-//Declarem la variable reactiva la qual guarda la informació del jugador que observem com a espectador
+
 const estatJugadorObservat = reactive({
-  paraules: estatDelJoc.paraules.map((p) => ({ ...p })), //Copiem les paraules de dins de estat del joc
+  paraules: [],
   indexParaulaActiva: 0,
   textEntrat: '',
 })
 
-const paraulaActiva = ref(estatDelJoc.paraules[0])
-let textAnterior = ''
+const paraulaActiva = ref(null)
+const textAnterior = ref('')
 const acabada = ref(false)
 const isSpectator = computed(() => props.jugador.role === 'spectator')
 
-//Variables per la vista d'espectador
-//const indexJugadorObservat = ref(0) ara usem l'ID per a que no canvii automaticament
 const idJugadorObservat = ref(null)
 const darrersGameStats = ref([])
-//---> filtra i guarda només els jugadors que no son espectadors FALTABA POSAR ref([]) per actualitzar
 const jugadorsReals = ref([])
+const notification = ref('')
 
-//Funció per controlar a quin jugador espectejar
-function canviarJugadorObservat(direccio) {
-  const llista = jugadorsReals.value
-  if (!llista.length) return
-
-  const indexActual = llista.findIndex((p) => p.id === idJugadorObservat.value)
-
-  let nouIndex = indexActual
-
-  if (direccio === 'seguent') {
-    nouIndex++
-    if (nouIndex >= llista.length) {
-      nouIndex = 0
-    }
-  } else if (direccio === 'anterior') {
-    nouIndex--
-    if (nouIndex < 0) {
-      nouIndex = llista.length - 1
-    }
+// 🧠 PROPIETATS COMPUTADES
+const paraulaActual = computed(() => {
+  if (acabada.value || !estatDelJoc.paraules.length) {
+    return null
   }
+  return estatDelJoc.paraules[estatDelJoc.indexParaulaActiva]
+})
 
-  if (llista[nouIndex]) {
-    idJugadorObservat.value = llista[nouIndex].id
-  }
-
-  actualitzarVistaEspectador()
+// 📢 NOTIFICACIONS
+function showNotification(message, duration = 3000) {
+  notification.value = message
+  setTimeout(() => {
+    notification.value = ''
+  }, duration)
 }
 
-function actualitzarVistaEspectador() {
-  if (!isSpectator.value) return
-
-  const gameStats = darrersGameStats.value
-
-  if (!gameStats || !idJugadorObservat.value) return
-
-  const stats = gameStats.find((s) => s.id === idJugadorObservat.value)
-
-  if (!stats) return
-
-  estatJugadorObservat.indexParaulaActiva = stats.indexParaulaActiva
-  estatJugadorObservat.textEntrat = stats.textEntrat
-
-  if (stats.paraules && stats.paraules.length > 0) {
-    estatJugadorObservat.paraules = stats.paraules.map((p) => ({ ...p }))
-  }
+// 🧠 FUNCIONS DE CONTROL DEL JOC
+function initializeActiveWord() {
+  paraulaActiva.value =
+    estatDelJoc.paraules && estatDelJoc.paraules.length > 0
+      ? estatDelJoc.paraules[0]
+      : null
 }
 
-// escoltem les dades que ens envia el servidor per l'espectador
-props.socket.on('spectatorGameView', (gameStats) => {
-  //Actualizem els camps de la variable darrersGameStats segons el que ens envia el servidor
-  darrersGameStats.value = gameStats
-
-  jugadorsReals.value = props.llistaJug.filter((p) => p.role !== 'spectator')
-
-  const jugadorActualEncaraExisteix = jugadorsReals.value.find(
-    (p) => p.id === idJugadorObservat.value,
-  )
-
-  if (
-    (!idJugadorObservat.value || !jugadorActualEncaraExisteix) &&
-    jugadorsReals.value.length > 0
-  ) {
-    idJugadorObservat.value = jugadorsReals.value[0].id
-  }
-  actualitzarVistaEspectador()
-})
-
-// Has guanyat el teu power-up
-props.socket.on('powerUpReady', (mage) => {
-  console.log('Power-up guanyat!', mage.powerUp)
-  powerUpState.ready = true
-  powerUpState.name = mage.powerUp
-})
-
-// El servidor confirma que has fet servir el power-up
-props.socket.on('powerUpUsed', () => {
-  console.log('Power-up utilitzat correctament!')
-  // El botó ja s'amaga al fer click (powerUpState.used = true)
-})
-
-// Reseteja l'estat al començar la partida
-props.socket.on('gameStarted', () => {
-  powerUpState.ready = false
-  powerUpState.used = false
-  powerUpState.name = ''
-  // Reseteja també els debuffs
-  debuffState.isActive = false
-  debuffState.type = null
-  debuffState.duration = 0
-})
-
-// T'han atacat!
-props.socket.on('debuffReceived', ({ type, duration }) => {
-  console.log(`DEBUFF REBUT: ${type} durant ${duration}ms`)
-  debuffState.isActive = true
-  debuffState.type = type
-  debuffState.duration = duration
-})
-
-// S'ha acabat el debuff
-props.socket.on('debuffEnded', () => {
-  console.log('Debuff acabat!')
-  debuffState.isActive = false
-  debuffState.type = null
-  debuffState.duration = 0
-})
-
-// El Tsunami t'ha tocat (has fallat)
-props.socket.on('tsunamiHit', () => {
-  console.log('TSUNAMI! Has de tornar a començar la frase.')
-
-  // Reseteja el progrés del joc
-  estatDelJoc.indexParaulaActiva = 0
-
-  // Comprova si hi ha paraules abans d'assignar
-  if (estatDelJoc.paraules.length > 0) {
-    paraulaActiva.value = estatDelJoc.paraules[0]
-  }
-
-  // Marca totes les paraules com a pendents
-  estatDelJoc.paraules.forEach((p) => (p.estat = 'pendent'))
-
-  // Envia l'estat actualitzat als espectadors
-  playerGameStatus()
-})
-
-// 3. FUNCIONS DEL JOC
 function validarProgres() {
-  // ... (sense canvis aquí) ...
-  if (acabada.value) return
-
+  if (!paraulaActiva.value || acabada.value) return
   const paraulaObjectiu = getTexteParaulaActiva()
+  const inputActual = estatDelJoc.textEntrat.toLowerCase()
 
-  estatDelJoc.textEntrat = estatDelJoc.textEntrat.toLowerCase()
-  const inputActual = estatDelJoc.textEntrat
-
-  if (inputActual.length > textAnterior.length) {
+  if (inputActual.length > textAnterior.value.length) {
     const indexActual = inputActual.length - 1
-
     if (inputActual[indexActual] !== paraulaObjectiu[indexActual]) {
       props.socket.emit('addErrors', { roomName: props.roomName, id: props.jugador.id })
     }
   }
-  textAnterior = inputActual
 
-  if (estatDelJoc.textEntrat === paraulaObjectiu) {
+  textAnterior.value = inputActual
+
+  if (inputActual === paraulaObjectiu) {
     props.socket.emit('addPoints', { roomName: props.roomName, id: props.jugador.id })
-
     paraulaActiva.value.estat = 'completada'
     estatDelJoc.indexParaulaActiva++
-
     estatDelJoc.textEntrat = ''
-    textAnterior = ''
+    textAnterior.value = ''
 
     if (estatDelJoc.indexParaulaActiva < estatDelJoc.paraules.length) {
       paraulaActiva.value = estatDelJoc.paraules[estatDelJoc.indexParaulaActiva]
     } else {
       acabada.value = true
+      paraulaActiva.value = null
     }
   }
+
   playerGameStatus()
 }
 
-// 4. Funció que afegeix estils a cada lletra
 function getClasseLletra(indexLletra) {
-  // AFEGIM AQUESTA LÍNIA
-  const paraulaObjectiu = getTexteParaulaActiva() // Consulta la paraula (amb o sense tildes)
+  if (!paraulaActiva.value) return 'lletra-noArribada'
 
-  // CANVIEM "paraulaActiva.value.text" per "paraulaObjectiu"
+  const paraulaObjectiu = getTexteParaulaActiva()
   const lletraEsperada = paraulaObjectiu[indexLletra]
   const lletraIntroduida = estatDelJoc.textEntrat[indexLletra]
 
-  // Si l'usuari encara no ha escrit aquesta lletra
   if (lletraIntroduida === undefined) {
-    if (indexLletra === estatDelJoc.textEntrat.length) {
-      return 'lletra-actual'
-    }
-    return 'lletra-noArribada'
+    return indexLletra === estatDelJoc.textEntrat.length
+      ? 'lletra-actual'
+      : 'lletra-noArribada'
   }
 
-  // Si l'usuari ja ha escrit aquesta lletra
-  if (lletraIntroduida === lletraEsperada) {
-    return 'lletra-correcta' // Ara 'á' === 'á' (Correcte!)
-  } else {
-    return 'lletra-incorrecta' // Ara 'a' !== 'á' (Incorrecte!)
-  }
+  return lletraIntroduida === lletraEsperada ? 'lletra-correcta' : 'lletra-incorrecta'
 }
 
-//Funcio d'estils per l'espectador (el mateix que el jugador)
 function getSpectatorClasseLletra(indexLletra, paraulaSencera) {
-  // ... (sense canvis aquí) ...
   const lletraEsperada = paraulaSencera[indexLletra]
-  const lletraIntroduida = estatJugadorObservat.textEntrat[indexLletra] // Si l'usuari (observat) encara no ha escrit aquesta lletra
+  const lletraIntroduida = estatJugadorObservat.textEntrat[indexLletra]
 
   if (lletraIntroduida === undefined) {
-    // Si és just la següent lletra que toca escriure, la marquem com a "cursor"
-    if (indexLletra === estatJugadorObservat.textEntrat.length) {
-      return 'lletra-actual'
-    } // Si són lletres futures, no tenen estil
-    return 'lletra-noArribada'
-  } // Si l'usuari (observat) ja ha escrit aquesta lletra
-
-  if (lletraIntroduida === lletraEsperada) {
-    return 'lletra-correcta' // Coincideix
-  } else {
-    return 'lletra-incorrecta' // No coincideix
+    return indexLletra === estatJugadorObservat.textEntrat.length
+      ? 'lletra-actual'
+      : 'lletra-noArribada'
   }
+
+  return lletraIntroduida === lletraEsperada ? 'lletra-correcta' : 'lletra-incorrecta'
 }
 
-// 5. Funció que envia al servidor l'informació actual del seu estat de la partida
+// 🧩 UTILITARIS
+function getTexteParaulaActiva() {
+  if (!paraulaActiva.value) return ''
+  const textOriginal = paraulaActiva.value.text
+  if (debuffState.isActive && debuffState.type === 'Ignicio') {
+    return textOriginal.split('').map(posarTildes).join('')
+  }
+  return textOriginal
+}
+
+function posarTildes(lletra) {
+  const tildes = { a: 'á', e: 'é', i: 'í', o: 'ó', u: 'ú', A: 'Á', E: 'É', I: 'Í', O: 'Ó', U: 'Ú' }
+  return tildes[lletra] || lletra
+}
+
+function caracterEspecial() {
+  const chars = '@#$%&*-+?'
+  return chars[Math.floor(Math.random() * chars.length)]
+}
+
+function getDisplayWord(text) {
+  if (!text) return ''
+  if (!debuffState.isActive) return text
+  if (debuffState.type === 'Ignicio') return text.split('').map(posarTildes).join('')
+  if (debuffState.type === 'Enredadera') return text.split('').map(caracterEspecial).join('')
+  return text
+}
+
+function getDisplayLetter(lletra, index) {
+  if (!debuffState.isActive) return lletra
+  if (debuffState.type === 'Ignicio') return posarTildes(lletra)
+  if (debuffState.type === 'Enredadera') {
+    const lletraIntroduida = estatDelJoc.textEntrat[index]
+    return lletraIntroduida === lletra ? lletra : caracterEspecial()
+  }
+  return lletra
+}
+
+// 🛰️ ESTAT DEL JUGADOR
 function playerGameStatus() {
-  // ... (sense canvis aquí) ...
   props.socket.emit('playerGameStatus', {
     roomName: props.roomName,
     data: {
@@ -375,87 +280,157 @@ function playerGameStatus() {
   })
 }
 
-//Funció per definir el text de la Paraula Activa per posar les tildes
-function getTexteParaulaActiva() {
-  const textOriginal = paraulaActiva.value.text
-
-  // Si el debuff Ignicio está actiu, retorna la versió amb tildes
-  if (debuffState.isActive && debuffState.type === 'Ignicio') {
-    return textOriginal.split('').map(posarTildes).join('')
-  }
-
-  // Si no, retorna el text normal
-  return textOriginal
-}
-
+// ⚡ POWER-UP
 function usePowerUp() {
   if (!powerUpState.ready || powerUpState.used) return
-  powerUpState.used = true // Marca com a utilitzat (amaga el botó)
-
-  // Envia l'event al servidor. El servidor s'encarrega de tot.
-  props.socket.emit('usePowerUp', {
-    roomName: props.roomName,
-    id: props.jugador.id,
-  })
+  // No actualitzem l'estat aquí, esperem la confirmació del servidor
+  props.socket.emit('usePowerUp', { roomName: props.roomName, id: props.jugador.id })
 }
 
-// Funció auxiliar per 'Ignició'
-function posarTildes(lletra) {
-  const tildes = {
-    a: 'á',
-    e: 'é',
-    i: 'í',
-    o: 'ó',
-    u: 'ú',
-    A: 'Á',
-    E: 'É',
-    I: 'Í',
-    O: 'Ó',
-    U: 'Ú',
-  }
-  return tildes[lletra] || lletra
+// 👁️ CONTROL D'ESPECTADOR
+function canviarJugadorObservat(direccio) {
+  const llista = jugadorsReals.value
+  if (!llista.length) return
+
+  const indexActual = llista.findIndex((p) => p.id === idJugadorObservat.value)
+  let nouIndex = indexActual
+
+  if (direccio === 'seguent') nouIndex = (nouIndex + 1) % llista.length
+  else if (direccio === 'anterior') nouIndex = (nouIndex - 1 + llista.length) % llista.length
+
+  idJugadorObservat.value = llista[nouIndex].id
+  actualitzarVistaEspectador()
 }
 
-// Funció per 'Enredadera'
-function caracterEspecial() {
-  const chars = '@#$%&*-+?'
-  return chars[Math.floor(Math.random() * chars.length)]
+function actualitzarVistaEspectador() {
+  if (!isSpectator.value) return
+  const stats = darrersGameStats.value.find((s) => s.id === idJugadorObservat.value)
+  if (!stats) return
+
+  estatJugadorObservat.indexParaulaActiva = stats.indexParaulaActiva
+  estatJugadorObservat.textEntrat = stats.textEntrat
+  estatJugadorObservat.paraules = stats.paraules.map((p) => ({ ...p }))
 }
 
-// Per a les paraules que no són l'actual
-function getDisplayWord(text) {
-  if (!debuffState.isActive) return text
+// 🔌 SOCKETS
+watch(
+  () => props.spellText,
+  (newSpellText) => {
+    if (newSpellText && newSpellText.length > 0) {
+      estatDelJoc.paraules = newSpellText
+      estatDelJoc.indexParaulaActiva = 0
+      estatDelJoc.textEntrat = ''
+      acabada.value = false
+      textAnterior.value = ''
+      initializeActiveWord()
 
-  if (debuffState.type === 'Ignicio') {
-    return text.split('').map(posarTildes).join('')
-  }
+      powerUpState.ready = false
+      powerUpState.used = false
+      powerUpState.name = ''
 
-  if (debuffState.type === 'Enredadera') {
-    return text.split('').map(caracterEspecial).join('')
-  }
-  return text
-}
-
-// Per a les lletres de la paraula actual
-function getDisplayLetter(lletra, index) {
-  if (!debuffState.isActive) return lletra
-
-  if (debuffState.type === 'Ignicio') {
-    return posarTildes(lletra)
-  }
-  if (debuffState.type === 'Enredadera') {
-    // Mostra la lletra correcta si ja l'has escrit bé
-    const lletraIntroduida = estatDelJoc.textEntrat[index]
-    if (lletraIntroduida !== undefined && lletraIntroduida === lletra) {
-      return lletra
+      debuffState.isActive = false
+      debuffState.type = null
+      debuffState.duration = 0
     }
-    return caracterEspecial()
+  },
+  { immediate: true }
+)
+
+props.socket.on('spectatorGameView', (gameStats) => {
+  darrersGameStats.value = gameStats
+  jugadorsReals.value = props.llistaJug.filter((p) => p.role !== 'spectator')
+
+  const jugadorActualExisteix = jugadorsReals.value.find((p) => p.id === idJugadorObservat.value)
+  if ((!idJugadorObservat.value || !jugadorActualExisteix) && jugadorsReals.value.length > 0) {
+    idJugadorObservat.value = jugadorsReals.value[0].id
   }
-  return lletra
-}
+  actualitzarVistaEspectador()
+})
+
+props.socket.on('powerUpReady', (mage) => {
+  showNotification('🔥 Power-up a punt! 🔥')
+  powerUpState.ready = true
+  powerUpState.name = mage.powerUp
+})
+
+props.socket.on('powerUpUsed', () => {
+  showNotification(`Has utilitzat el teu poder: ${powerUpState.name}!`)
+  powerUpState.used = true // Actualitzem l'estat al rebre la confirmació
+})
+
+props.socket.on('powerUpFailed', ({ message }) => {
+  showNotification(message)
+})
+
+props.socket.on('debuffReceived', ({ type, duration }) => {
+  showNotification(`HAN FET SERVIR ${type.toUpperCase()} CONTRA TU!`)
+  debuffState.isActive = true
+  debuffState.type = type
+  debuffState.duration = duration
+})
+
+props.socket.on('debuffEnded', () => {
+  showNotification('L\'efecte del debuff ha acabat.')
+  debuffState.isActive = false
+  debuffState.type = null
+  debuffState.duration = 0
+})
+
+props.socket.on('tsunamiHit', () => {
+  showNotification('🌊 TSUNAMI! Has de tornar a començar la frase.')
+  estatDelJoc.indexParaulaActiva = 0
+  estatDelJoc.textEntrat = ''
+  textAnterior.value = ''
+  if (estatDelJoc.paraules.length > 0) {
+    paraulaActiva.value = estatDelJoc.paraules[0]
+  } else {
+    paraulaActiva.value = null
+  }
+  estatDelJoc.paraules.forEach((p) => (p.estat = 'pendent'))
+  playerGameStatus()
+})
 </script>
 
+
 <style scoped>
+/* --- NOTIFICACIONS --- */
+.notification-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.7);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 20;
+  pointer-events: none;
+}
+.notification-content {
+  background-color: #ffc107;
+  color: #333;
+  padding: 20px 40px;
+  border-radius: 10px;
+  font-size: 2rem;
+  font-weight: bold;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+  animation: fadeInOut 3s ease-in-out;
+}
+@keyframes fadeInOut {
+  0%,
+  100% {
+    opacity: 0;
+    transform: scale(0.8);
+  }
+  10%,
+  90% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* --- ESTILS GENERALS --- */
 .paraules {
   font-size: 1.5rem;
   line-height: 2;
@@ -484,22 +459,21 @@ function getDisplayLetter(lletra, index) {
   margin-top: 20px;
 }
 
+/* --- ESTILS DE LLETRES --- */
 .lletra-correcta {
-  color: #4caf50; /* Verd */
+  color: #4caf50;
 }
-
 .lletra-incorrecta {
-  color: #f44336; /* Vermell */
-  text-decoration: underline; /* Subratllat per errors */
+  color: #f44336;
+  text-decoration: underline;
 }
-
 .lletra-actual {
-  background-color: #777; /* Fons fosc per al "cursor" */
+  background-color: #777;
   color: white;
   border-radius: 2px;
 }
 
-/* Estils per els powerups */
+/* --- POWER-UPS --- */
 .mage-info {
   background-color: #f4f0ff;
   border: 1px solid #dcd1ff;
@@ -527,20 +501,18 @@ function getDisplayLetter(lletra, index) {
   border-radius: 8px;
   cursor: pointer;
   transition: all 0.2s ease;
-  box-shadow: 0 4px 15px 0 rgba(255, 193, 7, 0.4);
+  box-shadow: 0 4px 15px rgba(255, 193, 7, 0.4);
 }
 .powerup-button:hover {
   background-color: #ffca2c;
   transform: translateY(-2px);
-  box-shadow: 0 6px 20px 0 rgba(255, 193, 7, 0.5);
+  box-shadow: 0 6px 20px rgba(255, 193, 7, 0.5);
 }
 
-/* --- Estils per als Debuffs --- */
-
+/* --- DEBUFFS --- */
 #game-engine {
   position: relative;
 }
-
 .debuff-overlay {
   position: absolute;
   top: 0;
@@ -550,18 +522,13 @@ function getDisplayLetter(lletra, index) {
   z-index: 10;
   pointer-events: none;
 }
-
-/* Efecte 'Apagón' (Mag Oscur) */
 #game-engine.Apagon .debuff-overlay {
-  background-color: rgba(0, 0, 0, 0.85); /* 85% fosc */
+  background-color: rgba(0, 0, 0, 0.85);
   transition: background-color 0.5s ease;
 }
-
-/* Efecte 'Flash' (Mag de Llum) */
 #game-engine.Flash .debuff-overlay {
   animation: flash-animation 0.5s infinite alternate;
 }
-
 @keyframes flash-animation {
   from {
     background-color: rgba(255, 255, 255, 0.8);
@@ -570,14 +537,10 @@ function getDisplayLetter(lletra, index) {
     background-color: rgba(255, 255, 255, 0.2);
   }
 }
-
-/* Efecte 'Congelar' (Mag de Gel) */
-/* Amaga el fons de la paraula actual */
 #game-engine.Congelar .paraula.actual {
   background-color: transparent;
-  border: 1px dashed #ccc; /* Mostra una mica d'info */
+  border: 1px dashed #ccc;
 }
-/* Amaga el cursor de la lletra actual */
 #game-engine.Congelar .lletra-actual {
   background-color: transparent;
   color: inherit;

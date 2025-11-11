@@ -57,6 +57,7 @@
           :jugador="jugador"
           :llista-jug="jugadors"
           :room-name="currentRoom"
+          :spell-text="spellText"
         />
       </div>
       <!--Div on mostrem el temps restant de la partida-->
@@ -98,6 +99,7 @@ const joinedRoom = ref(false)
 const jugador = ref({ name: '', id: null, role: 'player' })
 const jugadors = ref([])
 const tempsInicial = ref(0)
+const spellText = ref([])
 
 const currentRoom = ref('')
 const roomInput = ref('')
@@ -148,9 +150,10 @@ function tryConn() {
     }
   })
   // ESTO CAMBIA LA VISTA A 'game' CUANDO EL SERVIDOR MANDA EL INICIO
-  socket.on('gameStarted', ({ time }) => {
+  socket.on('gameStarted', ({ time, spellText: newSpellText }) => {
     vista.value = 'game' // <--- PUNTO CLAVE
     tempsInicial.value = time
+    spellText.value = newSpellText
   })
 
   socket.on('gameFinished', ({ ranking }) => {
