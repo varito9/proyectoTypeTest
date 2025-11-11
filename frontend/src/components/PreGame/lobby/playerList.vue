@@ -1,19 +1,23 @@
 <template>
   <div class="player-list-container">
     <div v-for="player in props.llistaJug" :key="player.id" class="player-card">
-      <div class="player-info">
-        <span v-if="player.id === props.jugador.id" class="you-indicator">(Tú)</span>
+      <div class="player-content">
+        <!-- Información del jugador -->
+        <div class="player-info">
+          <span v-if="player.id === props.jugador.id" class="you-indicator">(Tú)</span>
 
-        <span class="margen" v-if="player.role === 'admin'" title="Administrador">⭐</span>
-        <span class="player-name">{{ player.name }}</span>
-        <span class="status-indicator" :class="player.isReady ? 'ready' : 'not-ready'">
-          {{ player.isReady ? 'Preparat ✔️' : 'No Preparat ❌' }}
-        </span>
-      </div>
+          <span v-if="player.role === 'admin'" title="Administrador">⭐</span>
+          <span class="player-name">{{ player.name }}</span>
+          <span class="status-indicator" :class="player.isReady ? 'ready' : 'not-ready'">
+            {{ player.isReady ? 'Preparat ✔️' : 'No Preparat ❌' }}
+          </span>
+        </div>
 
-      <div v-if="props.isAdmin && player.id !== props.jugador.id" class="admin-actions">
-        <button @click="setAdmin(player.id)" class="btn-admin">Hacer Admin</button>
-        <button @click="deletePlayer(player.id)" class="btn-kick">Expulsar</button>
+        <!-- Botones solo si es admin -->
+        <div v-if="props.isAdmin && player.id !== props.jugador.id" class="admin-actions">
+          <button @click="setAdmin(player.id)" class="btn-admin">Hacer Admin</button>
+          <button @click="deletePlayer(player.id)" class="btn-kick">Expulsar</button>
+        </div>
       </div>
     </div>
   </div>
@@ -92,19 +96,26 @@ function deletePlayer(id) {
   box-shadow: 0 0 18px 3px rgba(179, 102, 255, 0.9);
 }
 
+.player-content {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+}
+
 .player-info {
   display: flex;
   justify-content: center;
   align-items: center;
-  margin-top: 10px;
+  margin-top: 1rem;
 }
 .player-name {
   font-size: 1.3rem;
   font-weight: bold;
   color: #ffffff;
-  margin-left: 5px;
 }
 .you-indicator {
+  margin-right: 10px;
   color: #4dff8a; /* Verde brillante */
   font-weight: bold;
 }
@@ -119,8 +130,9 @@ function deletePlayer(id) {
 /* Sección de botones (abajo) */
 .admin-actions {
   display: flex;
-  gap: 10px; /* Espacio entre botones */
-  margin-top: 10px;
+  gap: 2rem; /* Espacio entre botones */
+  margin-top: 1rem;
+  margin-left: auto;
 }
 .btn-admin,
 .btn-kick {
@@ -144,8 +156,5 @@ function deletePlayer(id) {
 }
 .btn-kick:hover {
   background-color: #c00;
-}
-.margen {
-  margin-right: 20px;
 }
 </style>

@@ -235,6 +235,11 @@ io.on("connection", (socket) => {
 
     broadcastRoomState(room.name);
     console.log(`${player.name} se unió a ${room.name}`);
+
+    const joinMsg = `${player.name} s'ha unit a la sala.`;
+    socket.broadcast
+      .to(room.name)
+      .emit("lobbyNotification", { message: joinMsg, type: "info" });
   });
 
   socket.on("getRoomList", () => {
@@ -289,8 +294,12 @@ io.on("connection", (socket) => {
     }
 
     removeEmptyRooms();
-
     broadcastRoomState(roomName);
+    const kickMsg = `${kickedPlayer.name} ha estat expulsat per l'admin.`;
+    io.to(roomName).emit("lobbyNotification", {
+      message: kickMsg,
+      type: "error",
+    });
   });
 
   // Transferir Admin
@@ -424,6 +433,12 @@ io.on("connection", (socket) => {
 
       room.players = room.players.filter((p) => p.socketId !== socket.id);
 
+      const disconnectMsg = `${player.name} s'ha desconnectat.`;
+      io.to(room.name).emit("lobbyNotification", {
+        message: disconnectMsg,
+        type: "info",
+      });
+
       if (player.role === "admin" && room.players.length > 0) {
         room.players[0].role = "admin";
         io.to(room.players[0].socketId).emit("youAreNowAdmin");
@@ -466,6 +481,11 @@ io.on("connection", (socket) => {
 
     console.log(`${player.name} ha salido de la sala ${roomName}`);
 
+    const leaveMsg = `${player.name} ha sortit de la sala.`;
+    io.to(room.name).emit("lobbyNotification", {
+      message: leaveMsg,
+      type: "info",
+    });
     // Si era admin, pasar rol al siguiente jugador
     if (player.role === "admin" && room.players.length > 0) {
       room.players[0].role = "admin";

@@ -1,4 +1,8 @@
 <template>
+  <div v-if="notification.visible" :class="['notification', notification.type]">
+    <span class="notification-message">{{ notification.message }}</span>
+  </div>
+  <div class="fondo" v-if="!isConnected"></div>
   <div class="fondo" v-if="!isConnected">
     <img
       class="mago mago-fuego"
@@ -91,7 +95,7 @@
     </div>
   </div>
 
-  <div class="fondo" v-else-if="vista === 'preGame'">
+  <div class="fondoLobby" v-else-if="vista === 'preGame'">
     <h2>Sala: {{ currentRoom }}</h2>
     <viewLobby
       :socket-c="socket"
@@ -163,6 +167,21 @@ const roomState = ref(null)
 const isPrivateCreation = ref(false)
 const privateCodeInput = ref('')
 
+const notification = ref({ message: '', type: 'info', visible: false })
+let notificationTimer = null
+
+function showNotification(message, type = 'info', duration = 3000) {
+  // Si ya hay una notificación, la limpia para mostrar la nueva
+  if (notificationTimer) {
+    clearTimeout(notificationTimer)
+  }
+  notification.value = { message, type, visible: true }
+
+  notificationTimer = setTimeout(() => {
+    notification.value.visible = false
+  }, duration)
+}
+
 // --- CONEXIÓN Y EVENTOS ---
 
 function tryConn() {
@@ -198,19 +217,21 @@ function tryConn() {
       jugadors.value = [...ranking]
     }
   })
-  // ESTO CAMBIA LA VISTA A 'game' CUANDO EL SERVIDOR MANDA EL INICIO
+  // ESTO CAMBIA LA VISTA A 'game'
   socket.on('gameStarted', ({ time }) => {
-    vista.value = 'game' // <--- PUNTO CLAVE
+    vista.value = 'game'
     tempsInicial.value = time
+    showNotification('¡La partida ha començat', 'success')
   })
 
   socket.on('gameFinished', ({ ranking }) => {
     jugadors.value = [...ranking]
     vista.value = 'endGame'
+    showNotification('¡Partida acabada!', 'info')
   })
 
   socket.on('error', ({ message }) => {
-    alert(`Error del servidor: ${message}`)
+    showNotification(message, 'error')
     if (joinedRoom.value) {
       if (currentRoom.value === '' && !roomState.value) {
         joinedRoom.value = false
@@ -223,13 +244,21 @@ function tryConn() {
 
   //expulsar al jugador i notificar-lo
   socket.on('kicked', () => {
-    alert("Expulsat per l'admin")
+    showNotification('Has sido expulsado por el admin', 'error', 5000)
     socket.disconnect()
     resetToRoomList()
   })
   //Transferim l'admin
   socket.on('youAreNowAdmin', () => {
     jugador.value.role = 'admin'
+    showNotification('¡Eres el nou administrador!', 'info')
+  })
+
+  socket.on('lobbyNotification', ({ message, type }) => {
+    // Solo mostramos estas notificaciones si estamos en el lobby
+    if (vista.value === 'preGame') {
+      showNotification(message, type, 4000) // 4 segundos
+    }
   })
 }
 
@@ -363,6 +392,16 @@ input {
   min-height: 95%;
 }
 
+.fondoLobby {
+  position: relative; /* ¡MUY IMPORTANTE! */
+  background: linear-gradient(to bottom, #15131e 32%, #006aff 100%);
+  border-radius: 25px;
+  padding: 20px;
+  width: 98%;
+  height: 95%;
+  text-align: center;
+}
+
 /* --- ESTILS DEL LOGIN CONTAINER --- */
 .login-container {
   position: relative; /* Necesario para que z-index funcione */
@@ -464,12 +503,6 @@ input {
 /* --- (CSS ANTIC) ESTILS DE LES LLISTES DE SALES --- */
 /* Mantenim els estils originals per la llista de sales públiques */
 
-.ready {
-  background-color: greenyellow;
-}
-.notReady {
-  background-color: red;
-}
 .room-list {
   list-style: none;
   padding: 0;
@@ -518,5 +551,32 @@ hr {
   margin: 30px 0;
   border: 0;
   border-top: 1px solid #eee;
+}
+
+.notification {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  padding: 15px 25px;
+  border-radius: 8px;
+  color: #ffffff;
+  z-index: 1000;
+  font-weight: 500;
+  font-size: 1.1rem;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.4);
+  transition: all 0.3s ease-out;
+}
+
+/* Diferents tipus de notificació */
+.notification.info {
+  background: linear-gradient(to right, #007bff, #0056b3); /* Blau */
+}
+
+.notification.success {
+  background: linear-gradient(to right, #28a745, #1e7e34); /* Verd */
+}
+
+.notification.error {
+  background: linear-gradient(to right, #dc3545, #a71d2a); /* Vermell */
 }
 </style>

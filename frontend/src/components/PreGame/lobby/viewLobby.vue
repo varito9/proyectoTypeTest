@@ -19,11 +19,14 @@
       :room-name="roomName"
     />
   </div>
+  <div class="top-right-buttons">
+    <button v-if="isAdmin" @click="changeTime" class="btn btn-secondary">
+      Temps: {{ tempsEstablert }}
+    </button>
+    <button @click="leaveRoom" class="btn btn-leave">Salir de la Sala</button>
+  </div>
 
   <div class="action-bar">
-    <button v-if="isAdmin" @click="changeTime" class="btn btn-secondary">
-      Temps: {{ tempsEstablert }}s
-    </button>
     <button
       v-if="isAdmin"
       :class="['btn', 'btn-start', { disabled: !isMajority }]"
@@ -35,8 +38,6 @@
     <button :class="['btn', imReady ? 'ready' : 'notReady']" @click="toggleReady(jugadorClient.id)">
       {{ imReady ? 'Listo ✔️' : 'No Listo ❌' }}
     </button>
-
-    <button @click="leaveRoom" class="btn btn-leave">Salir de la Sala</button>
   </div>
 </template>
 
@@ -247,6 +248,11 @@ function leaveRoom() {
 .btn-leave:hover:not(:disabled) {
   background-color: #f85149;
 }
-
-/* Estado deshabilitado */
+.top-right-buttons {
+  position: fixed; /* se mantiene visible al hacer scroll */
+  top: 4rem;
+  right: 2rem;
+  display: flex;
+  gap: 3rem;
+}
 </style>
