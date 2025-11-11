@@ -103,7 +103,7 @@ function getRandomMage() {
 // ----------------------------------------------------
 // NUEVA FUNCIÓN: Obtener textos de la BDD
 // ----------------------------------------------------
-async function getRandomSpellText(category) {
+async function getRandomSpellText(category, limit = null) {
   if (!dbConnection) return null;
 
   try {
@@ -120,13 +120,30 @@ async function getRandomSpellText(category) {
 
     // 2. Elegir un conjuro (titol/mag) aleatorio
     const randomTitleIndex = Math.floor(Math.random() * titles.length);
-    const { titol, mag } = titles[randomTitleIndex];
+    const { titol, mag: rawMag } = titles[randomTitleIndex];
+    const mag = parseInt(rawMag, 10); // Explicitly cast to integer
+    if (isNaN(mag)) {
+      console.error(`[ERROR] 'mag' is NaN for category: ${category}, titol: ${titol}, rawMag: ${rawMag}`);
+      return null;
+    }
 
     // 3. Obtener todas las líneas de texto para ese conjuro, ordenadas por linea_orden.
-    const [lines] = await dbConnection.execute(
-      `SELECT linea_texto FROM datos_ejemplo WHERE categoria = ? AND titol = ? AND mag = ? ORDER BY linea_orden ASC`,
-      [category, titol, mag]
-    );
+    let query = `SELECT linea_texto FROM datos_ejemplo WHERE categoria = ? AND titol = ? AND mag = ? ORDER BY linea_orden ASC`;
+    const params = [category, titol, mag];
+
+    if (limit) {
+      const numericLimit = parseInt(limit, 10); // Explicitly cast to integer
+      if (isNaN(numericLimit)) {
+        console.error(`[ERROR] 'limit' is NaN for category: ${category}, titol: ${titol}, limit: ${limit}`);
+        return null;
+      }
+      query += ` LIMIT ${numericLimit}`;
+    }
+
+    console.log(`[DEBUG] Query for spell text: ${query}`);
+    console.log(`[DEBUG] Parameters for spell text: ${JSON.stringify(params)}`);
+
+    const [lines] = await dbConnection.execute(query, params);
 
     // 4. Mapear el resultado para obtener solo un array de strings (las líneas de texto)
     const textLines = lines.map(row => row.linea_texto.trim());
@@ -469,8 +486,7 @@ io.on("connection", (socket) => {
     broadcastRoomState(roomName);
   });
 
-  // Iniciar juego 
-  socket.on("startGame", async ({ roomName, id }) => { // 🔑 Añadir 'async'
+  socket.on("startGame", async ({ roomName, id }) => {
     const room = findRoom(roomName);
     if (!room) return;
 
@@ -478,113 +494,98 @@ io.on("connection", (socket) => {
     if (!admin) return;
 
     room.beingPlayed = true;
+    const tempsRestant = room.config.time;
 
-    // 1. Asignar magos y obtener la categoría del primer mago (Admin/Primer Player)
-    let selectedCategory = null;
-    room.players.forEach((p) => {
+    // 1. Determinar quins jugadors juguen i quins miren
+    const playingPlayers = [];
+    const spectators = [];
+
+    room.players.forEach(p => {
+      // Reset stats per a tothom
       p.points = 0;
       p.errors = 0;
-
       p.powerUpEarned = false;
       p.correctWordsInARow = 0;
-      p.debuff = { type: null, duration: 0 }; // Reseteja debuff
+      p.debuff = { type: null, duration: 0 };
       p.mage = null;
 
-      if (p.id === admin.id) {
-        p.isReady = true;
-        p.role = "admin";
-      } else if (!p.isReady) {
-        p.role = "spectator";
-      }
-
-      if (p.role !== "spectator") {
-        p.mage = getRandomMage();
-        // 🔑 Usar la categoría del primer jugador (Admin) para el conjuro
-        if (!selectedCategory) {
-          selectedCategory = p.mage.category;
-        }
+      // Assignar rol
+      if ((p.id === admin.id) || (p.isReady && p.role !== 'spectator')) {
+        p.role = p.id === admin.id ? 'admin' : 'player';
+        playingPlayers.push(p);
+      } else {
+        p.role = 'spectator';
+        spectators.push(p);
       }
     });
 
-    // 2. Obtener el texto del conjuro de la BDD (basado en la categoría del primer jugador)
-    let spellTextLines = [];
-    if (selectedCategory) {
-      spellTextLines = await getRandomSpellText(selectedCategory);
-      if (!spellTextLines || spellTextLines.length === 0) {
-        console.error(`No se pudo obtener el texto del conjuro para la categoría: ${selectedCategory}. Abortando juego.`);
-        room.beingPlayed = false; // Abortar si no hay texto
-        broadcastRoomState(roomName);
-        broadcastRoomList();
-        return;
+    const gameDataForSpectators = [];
+
+    // 2. Per a cada jugador, assignar mag i obtenir text
+    for (const player of playingPlayers) {
+      player.mage = getRandomMage();
+      const spellLines = await getRandomSpellText(player.mage.category, 20);
+      
+      const spellTextForPlayer = (!spellLines || spellLines.length === 0)
+        ? [{ text: "el text no ha carregat correctament.", estat: 'pendent' }]
+        : spellLines.map(line => ({ text: line.toLowerCase(), estat: 'pendent' }));
+
+      console.log(`[startGame] Player ${player.name} (${player.id}) assigned mage category: ${player.mage.category}`);
+      if (spellTextForPlayer.length > 0) {
+        console.log(`[startGame] Player ${player.name} received spell text snippet: "${spellTextForPlayer[0].text.substring(0, 50)}..."`);
+      } else {
+        console.log(`[startGame] Player ${player.name} received no spell text.`);
       }
-    }
 
-    // 3. Guardar el array de STRINGS en la sala
-    room.spellText = spellTextLines;
+      // Enviar l'event individualment a cada jugador
+      io.to(player.socketId).emit("gameStarted", {
+        time: tempsRestant,
+        spellText: spellTextForPlayer,
+        category: player.mage.category,
+      });
+      console.log(`[DEBUG] Sending to player ${player.name} (ID: ${player.id}, SocketID: ${player.socketId}):`);
+      console.log(`[DEBUG]   Category: ${player.mage.category}`);
+      console.log(`[DEBUG]   Spell Text (first line): ${spellTextForPlayer.length > 0 ? spellTextForPlayer[0].text : 'N/A'}`);
 
-    room.spectatorIds = room.players
-      .filter((p) => p.role === "spectator")
-      .map((p) => p.id);
-
-    // 🔑 CORRECCIÓN CLAVE: CREAR ARRAY DE OBJETOS DE PALABRAS AQUÍ
-    // El frontend espera [{ text: 'linea', estat: 'pendent' }, ...]
-    const spellTextForStats = room.spellText.map(line => ({
-      text: line.toLowerCase(),
-      estat: 'pendent'
-    }));
-
-    // 4. Inicializar gameStats
-    room.gameStats = room.players
-      .filter((p) => p.role !== "spectator")
-      .map((p) => ({
-        id: p.id,
-        name: p.name, // Añadido para que el espectador sepa de quién es
+      // Preparar dades per als espectadors
+      gameDataForSpectators.push({
+        id: player.id,
+        name: player.name,
         textEntrat: "",
         indexParaulaActiva: 0,
-        // Usar el array de objetos
-        paraules: spellTextForStats,
-      }));
+        paraules: spellTextForPlayer,
+      });
+    }
 
-    let tempsRestant = room.config.time;
+    // 3. Actualitzar l'estat de la sala per als espectadors
+    room.gameStats = gameDataForSpectators;
+    room.spectatorIds = spectators.map(p => p.id);
 
-    // 5. Enviar el texto del conjuro y el tiempo restante
-    // 🔑 ASEGURARNOS DE ENVIAR EL ARRAY DE OBJETOS
-    io.to(roomName).emit("gameStarted", {
-      time: tempsRestant,
-      spellText: spellTextForStats
+    spectators.forEach(spectator => {
+      io.to(spectator.socketId).emit("gameStarted", { time: tempsRestant, spellText: [] });
+      io.to(spectator.socketId).emit("spectatorGameView", room.gameStats);
     });
 
-    // 🔑 CORRECCIÓN: Enviar el estado inicial a los espectadores inmediatamente
-    // Si hay espectadores, les enviamos la vista del juego justo al empezar.
-    if (room.spectatorIds.length > 0) {
-      const initialGameStats = room.gameStats;
-      room.spectatorIds.forEach(spectatorId => {
-        io.to(room.players.find(p => p.id === spectatorId)?.socketId).emit("spectatorGameView", initialGameStats);
-      });
-    }
-
-    if (room.timer) {
-      clearInterval(room.timer);
-    }
-
+    // 4. Iniciar el temporitzador del joc
+    if (room.timer) clearInterval(room.timer);
+    
+    let remainingTime = tempsRestant;
     room.timer = setInterval(() => {
+      remainingTime--;
       room.players.forEach((p) => {
         if (p.debuff.duration > 0) {
-          p.debuff.duration--; // Resta 1 segon
+          p.debuff.duration--;
           if (p.debuff.duration === 0) {
             p.debuff.type = null;
-            io.to(p.socketId).emit("debuffEnded"); // Avisa al client que s'ha acabat
+            io.to(p.socketId).emit("debuffEnded");
           }
         }
-
       });
 
-      tempsRestant--;
-
-      if (tempsRestant <= 0) {
+      if (remainingTime <= 0) {
         endGame(roomName);
       } else {
-        io.to(roomName).emit("updateTime", { time: tempsRestant });
+        io.to(roomName).emit("updateTime", { time: remainingTime });
       }
     }, 1000);
 

@@ -107,6 +107,7 @@ const props = defineProps({
   llistaJug: { type: Array, required: true },
   roomName: { type: String, required: true },
   spellText: { type: Array, required: true },
+  spellCategory: { type: String, required: false, default: '' },
 })
 
 // ⚙️ ESTATS PRINCIPALS
