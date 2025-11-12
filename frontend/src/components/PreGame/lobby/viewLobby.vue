@@ -20,14 +20,15 @@
     />
   </div>
   <div class="top-right-buttons">
-    <button v-if="isAdmin" @click="changeTime" class="btn btn-secondary">
+    <button v-if="isAdmin" @click="changeTime" class="btn badget">
       Temps: {{ tempsEstablert }}
     </button>
-    <button @click="leaveRoom" class="btn btn-leave">Salir de la Sala</button>
+    <button @click="leaveRoom" class="btn salir">Salir de la Sala</button>
   </div>
 
   <div class="action-bar">
     <button
+      class="comenzar"
       v-if="isAdmin"
       :class="['btn', 'btn-start', { disabled: !isMajority }]"
       @click="startGame"
@@ -204,7 +205,7 @@ function leaveRoom() {
   padding: 0.75rem 1.5rem;
   font-family: 'Poppins', sans-serif;
   font-size: 1rem;
-  font-weight: 600;
+  font-weight: 500;
   border: none;
   border-radius: 8px;
   cursor: pointer;
@@ -217,42 +218,40 @@ function leaveRoom() {
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
 }
 
-/* --- Variantes de botones --- */
-
-.btn-secondary {
-  background-color: #30363d;
-  border: 1px solid #484f58;
-}
-.btn-secondary:hover:not(:disabled) {
-  background-color: #3a4047;
-}
-
-.btn-start {
-  background-color: #238636; /* Verde "Comenzar" */
-}
-.btn-start:hover:not(:disabled) {
-  background-color: #2da042;
-}
-
-.btn.ready {
-  background-color: #238636; /* Verde "Listo" */
-}
-
-.btn.notReady {
-  background-color: #8b0000; /* Rojo oscuro "No Listo" */
-}
-
-.btn-leave {
-  background-color: #da3633; /* Rojo "Salir" */
-}
-.btn-leave:hover:not(:disabled) {
-  background-color: #f85149;
-}
 .top-right-buttons {
   position: fixed; /* se mantiene visible al hacer scroll */
   top: 4rem;
   right: 2rem;
   display: flex;
   gap: 3rem;
+}
+
+.badget {
+  background: linear-gradient(to right, #2c2b53 0%, #f58b00 100%);
+  border-radius: 100px;
+  color: white;
+  padding: 8px 20px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.comenzar {
+  background: linear-gradient(to right, #8d087b 0%, #000000 100%);
+  border-radius: 100px;
+  color: white;
+  padding: 8px 20px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.salir {
+  background: linear-gradient(to right, #ff0202 0%, hsl(337, 100%, 71%) 100%);
+  border-radius: 100px;
+  color: white;
+  padding: 8px 20px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 </style>

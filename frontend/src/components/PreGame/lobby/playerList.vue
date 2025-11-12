@@ -79,7 +79,7 @@ function deletePlayer(id) {
   border: 2px solid #b366ff; /* Borde neón */
   box-shadow: 0 0 10px 1px rgba(179, 102, 255, 0.7); /* Resplandor */
   padding: 25px;
-  height: 70px; /* Altura mínima */
+  height: 50px; /* Altura mínima */
 
   /* Flexbox para ordenar el contenido verticalmente */
   display: flex;
@@ -107,7 +107,7 @@ function deletePlayer(id) {
   display: flex;
   justify-content: center;
   align-items: center;
-  margin-top: 1rem;
+  margin-top: 10px;
 }
 .player-name {
   font-size: 1.3rem;
@@ -123,7 +123,7 @@ function deletePlayer(id) {
 /* Sección de estado (centro) */
 .status-indicator {
   margin-left: 20px;
-  font-size: 1.3rem;
+  font-size: 1rem;
   font-weight: bold;
 }
 
@@ -131,7 +131,7 @@ function deletePlayer(id) {
 .admin-actions {
   display: flex;
   gap: 2rem; /* Espacio entre botones */
-  margin-top: 1rem;
+  margin-top: 10px;
   margin-left: auto;
 }
 .btn-admin,

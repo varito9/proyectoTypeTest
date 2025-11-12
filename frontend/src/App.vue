@@ -2,7 +2,6 @@
   <div v-if="notification.visible" :class="['notification', notification.type]">
     <span class="notification-message">{{ notification.message }}</span>
   </div>
-  <div class="fondo" v-if="!isConnected"></div>
   <div class="fondo" v-if="!isConnected">
     <img
       class="mago mago-fuego"
@@ -566,14 +565,14 @@ hr {
 
 /* Diferents tipus de notificació */
 .notification.info {
-  background: linear-gradient(to right, #007bff, #0056b3); /* Blau */
+  background: linear-gradient(to right, #ff058e 0%, #000000 100%);
 }
 
 .notification.success {
-  background: linear-gradient(to right, #28a745, #1e7e34); /* Verd */
+  background: linear-gradient(to right, #04832100, #1e7e34); /* Verd */
 }
 
 .notification.error {
-  background: linear-gradient(to right, #dc3545, #a71d2a); /* Vermell */
+  background: linear-gradient(to right, #ff0202 0%, hsl(337, 100%, 71%) 100%);
 }
 </style>
