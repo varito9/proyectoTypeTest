@@ -1,22 +1,31 @@
 <template>
   <div class="player-list-container">
-    <div v-for="player in props.llistaJug" :key="player.id" class="player-card">
-      <div class="player-content">
-        <!-- Información del jugador -->
-        <div class="player-info">
-          <span v-if="player.id === props.jugador.id" class="you-indicator">(Tú)</span>
+    <div class="player-grid">
+      <div
+        v-for="player in props.llistaJug"
+        :key="player.id"
+        class="player-slot"
+      >
+        <div
+          class="player-card"
+          :class="{ self: player.id === props.jugador.id }"
+        >
+          <div class="player-avatar">
+            <img src="/img/Aprendiz_Mago.png" alt="Avatar de jugador" />
+          </div>
+          <div class="player-info">
+            <span class="player-name" :class="{ self: player.id === props.jugador.id }">
+              {{ player.name }}
+            </span>
+            <span class="player-role" :class="{ admin: player.role === 'admin' }">
+              {{ roleLabel(player) }}
+            </span>
+          </div>
 
-          <span v-if="player.role === 'admin'" title="Administrador">⭐</span>
-          <span class="player-name">{{ player.name }}</span>
-          <span class="status-indicator" :class="player.isReady ? 'ready' : 'not-ready'">
-            {{ player.isReady ? 'Jugador' : 'Espectador' }}
-          </span>
-        </div>
-
-        <!-- Botones solo si es admin -->
-        <div v-if="props.isAdmin && player.id !== props.jugador.id" class="admin-actions">
-          <button @click="setAdmin(player.id)" class="btn-admin">Hacer Admin</button>
-          <button @click="deletePlayer(player.id)" class="btn-kick">Expulsar</button>
+          <div v-if="props.isAdmin && player.id !== props.jugador.id" class="admin-actions">
+            <button @click="setAdmin(player.id)" class="btn-admin">Hacer Admin</button>
+            <button @click="deletePlayer(player.id)" class="btn-kick">Expulsar</button>
+          </div>
         </div>
       </div>
     </div>
@@ -29,6 +38,17 @@ import { computed } from 'vue'
 const props = defineProps(['socketC', 'llistaJug', 'isAdmin', 'jugador', 'roomName'])
 
 const socket = computed(() => props.socketC)
+
+function roleLabel(player) {
+  if (player.role === 'admin') return 'Archimago'
+  if (player.isReady) {
+
+    return 'Mago'
+  }
+  else{
+    return 'Espectro'
+  }
+}
 
 // Functions
 function setAdmin(id) {
@@ -63,98 +83,147 @@ function deletePlayer(id) {
 <style scoped>
 /* Estilos necesarios para la lista */
 .player-list-container {
-  display: grid;
-  /* 2 columnas. Cambia a repeat(3, 1fr) para 3 columnas */
-  grid-template-columns: repeat(2, 1fr);
-  gap: 20px;
-  padding: 24px;
+  display: flex;
+  justify-content: center;
+  padding: 12px 24px 32px 24px;
   width: 100%;
+  box-sizing: border-box;
+}
+
+.player-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(320px, 1fr));
+  grid-template-rows: repeat(3, minmax(140px, auto));
+  gap: 30px 48px;
+  width: min(80%, 100%);
+}
+
+.player-slot {
+  display: flex;
+  justify-content: center;
+  align-items: stretch;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 /* 🎨 La tarjeta de jugador (Estilo de la imagen) */
 .player-card {
-  text-align: center;
-  background-color: #1a1a2e; /* Fondo oscuro */
-  border-radius: 16px;
-  border: 2px solid #b366ff; /* Borde neón */
-  box-shadow: 0 0 10px 1px rgba(179, 102, 255, 0.7); /* Resplandor */
-  padding: 25px;
-  height: 50px; /* Altura mínima */
-
-  /* Flexbox para ordenar el contenido verticalmente */
   display: flex;
-  flex-direction: column;
-  justify-content: space-between; /* ¡Clave! Empuja el contenido */
-
+  align-items: center;
+  gap: 20px;
+  background: rgba(14, 10, 25, 0.8);
+  border: 2px solid rgba(187, 168, 255, 0.6);
+  border-radius: 22px;
+  padding: 18px 24px;
+  box-shadow: 0 12px 30px rgba(71, 40, 135, 0.35);
   transition:
     transform 0.3s ease,
-    box-shadow 0.3s ease;
+    box-shadow 0.3s ease,
+    border-color 0.3s ease;
+  width: 100%;
 }
 
 .player-card:hover {
   transform: translateY(-5px);
-  box-shadow: 0 0 18px 3px rgba(179, 102, 255, 0.9);
+  box-shadow: 0 20px 38px rgba(142, 84, 255, 0.45);
+  border-color: rgba(203, 149, 230, 0.9);
 }
 
-.player-content {
+.player-card.self {
+  border-color: rgba(77, 255, 138, 0.7);
+  box-shadow: 0 16px 36px rgba(77, 255, 138, 0.3);
+}
+
+.player-avatar {
+  width: 70px;
+  height: 70px;
+  border-radius: 50%;
+  overflow: hidden;
+  flex-shrink: 0;
+  border: 2px solid rgba(203, 149, 230, 0.6);
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.player-avatar img {
   width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 .player-info {
   display: flex;
-  justify-content: center;
-  align-items: center;
-  margin-top: 10px;
-}
-.player-name {
-  font-size: 1.3rem;
-  font-weight: bold;
-  color: #ffffff;
-}
-.you-indicator {
-  margin-right: 10px;
-  color: #4dff8a; /* Verde brillante */
-  font-weight: bold;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
 }
 
-/* Sección de estado (centro) */
-.status-indicator {
-  margin-left: 20px;
-  font-size: 1rem;
-  font-weight: bold;
+.player-name {
+  font-size: 1.45rem;
+  font-weight: 500;
+  color: #f4f3ff;
+  letter-spacing: 0.01em;
+}
+
+.player-name.self {
+  color: #4dff8a;
+  font-weight: 600;
+}
+
+.player-role {
+  font-size: 0.95rem;
+  color: #a59bd6;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.player-role.admin {
+  color: #ffcf6b;
 }
 
 /* Sección de botones (abajo) */
 .admin-actions {
   display: flex;
-  gap: 2rem; /* Espacio entre botones */
-  margin-top: 10px;
+  gap: 1rem; /* Espacio entre botones */
   margin-left: auto;
 }
 .btn-admin,
 .btn-kick {
   border: none;
-  border-radius: 5px;
-  padding: 8px 12px;
+  border-radius: 999px;
+  padding: 10px 20px;
   cursor: pointer;
-  font-weight: bold;
-  transition: background-color 0.2s ease;
+  font-weight: 600;
+  font-size: 0.92rem;
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease,
+    filter 0.2s ease;
+  color: #0e0a19;
+  background-clip: padding-box;
 }
 .btn-admin {
-  background-color: #3a86ff;
-  color: white;
+  background: linear-gradient(135deg, #62b5ff 0%, #8dd0ff 100%);
 }
 .btn-admin:hover {
-  background-color: #0056d3;
+  transform: translateY(-2px);
+  box-shadow: 0 14px 26px rgba(98, 181, 255, 0.45);
 }
 .btn-kick {
-  background-color: #ff3a3a;
-  color: white;
+  background: linear-gradient(135deg, #ff5f6d 0%, #ffc371 100%);
+  color: #170b1f;
 }
 .btn-kick:hover {
-  background-color: #c00;
+  transform: translateY(-2px);
+  box-shadow: 0 14px 26px rgba(255, 95, 109, 0.45);
+}
+
+.btn-admin:active,
+.btn-kick:active {
+  transform: translateY(0);
+  box-shadow: none;
+  filter: brightness(0.95);
 }
 </style>

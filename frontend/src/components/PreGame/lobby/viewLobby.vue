@@ -1,10 +1,5 @@
 <template>
   <div class="main-content">
-    <p class="welcome-text">
-      Bienvenido {{ jugadorClient.name }}. Tienes el rol de
-      <strong>{{ jugadorClient.role }}</strong> en la sala.
-    </p>
-
     <div v-if="accessCodeToDisplay" class="access-code-box">
       Sala Privada 🔒 | Código de Acceso:
       <strong>{{ accessCodeToDisplay }}</strong>
@@ -20,8 +15,9 @@
     />
   </div>
   <div class="top-right-buttons">
-    <button v-if="isAdmin" @click="changeTime" class="btn badget">
-      Temps: {{ tempsEstablert }}
+    <button v-if="isAdmin" @click="changeTime" class="btn btn-time">
+      <span class="btn-time-label">Modificar el temps de la partida</span>
+      <span class="btn-time-value">{{ tempsEstablert }}s</span>
     </button>
     <button @click="leaveRoom" class="btn salir">Salir de la Sala</button>
   </div>
@@ -177,10 +173,22 @@ function leaveRoom() {
   flex-wrap: wrap; /* Para que se vea bien en pantallas pequeñas */
   justify-content: center;
   align-items: center;
-  gap: 1rem; /* Espacio entre botones */
+  gap: 1.5rem; /* Espacio entre botones */
   width: 100%;
-  padding-top: 1rem;
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  padding-top: 2.5rem;
+  padding-bottom: 3.5rem;
+}
+
+.action-bar .btn {
+  min-width: 200px;
+  min-height: 60px;
+  font-size: 1.1rem;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 /* Estilo base de todos los botones */
@@ -204,9 +212,11 @@ function leaveRoom() {
 .top-right-buttons {
   position: fixed; /* se mantiene visible al hacer scroll */
   top: 4rem;
-  right: 2rem;
+  right: 3rem;
   display: flex;
-  gap: 3rem;
+  align-items: center;
+  gap: 2rem;
+  z-index: 10;
 }
 
 .badget {
@@ -215,26 +225,141 @@ function leaveRoom() {
   padding: 8px 20px;
 }
 
-.comenzar {
-  background: linear-gradient(to right, #8d087b 0%, #000000 100%);
-  border-radius: 100px;
-  padding: 8px 20px;
-}
+.btn-time,
 .salir {
-  background: linear-gradient(to right, #ff0202 0%, hsl(337, 100%, 71%) 100%);
-  border-radius: 100px;
-  padding: 8px 20px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  min-height: 56px;
+  padding: 0 34px;
+  line-height: 1;
+}
+
+.btn-time {
+  gap: 14px;
+  background: linear-gradient(135deg, #251d4a 0%, #4f3fbf 35%, #ffb347 100%);
+  border: 1px solid rgba(255, 238, 206, 0.6);
+  color: #fff9f3;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 12px 26px rgba(90, 57, 180, 0.35);
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease,
+    filter 0.2s ease;
+}
+
+.btn-time:hover,
+.btn-time:focus {
+  transform: translateY(-2px);
+  box-shadow: 0 18px 38px rgba(90, 57, 180, 0.45);
+  filter: brightness(1.08);
+}
+
+.btn-time:active {
+  transform: translateY(0);
+  box-shadow: none;
+  filter: brightness(0.95);
+}
+
+.btn-time-label {
+  opacity: 0.9;
+}
+
+.btn-time-value {
+  padding: 6px 14px;
+  border-radius: 999px;
+  background: rgba(17, 10, 35, 0.6);
+  border: 1px solid rgba(255, 220, 180, 0.45);
+  font-size: 1.05rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: #ffe3bf;
+}
+
+.comenzar {
+  background: linear-gradient(135deg, #8d087b 0%, #2b0f6b 50%, #000000 100%);
+  color: #fefbff;
+  text-transform: uppercase;
+  border: 1px solid rgba(197, 141, 255, 0.45);
+  box-shadow: 0 15px 35px rgba(141, 8, 123, 0.35);
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease,
+    filter 0.2s ease;
+}
+
+.comenzar:hover,
+.comenzar:focus {
+  transform: translateY(-3px);
+  box-shadow: 0 22px 45px rgba(141, 8, 123, 0.45);
+  filter: brightness(1.05);
+}
+
+.salir {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #ff4fac 0%, #ff6f61 40%, #ffc371 100%);
+  border-radius: 999px;
+  padding: 0 38px;
+  font-size: 0.96rem;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  color: #fff7ff;
+  border: 1px solid rgba(255, 215, 240, 0.55);
+  text-transform: uppercase;
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease,
+    filter 0.2s ease;
+}
+
+.salir:hover, .salir:focus   {
+  transform: translateY(-2px);
+  filter: brightness(1.05);
+}
+
+.salir:active {
+  transform: translateY(0);
+  box-shadow: none;
+  filter: brightness(0.95);
 }
 
 .ready {
-  background: linear-gradient(to right, #360505 0%, hsl(337, 100%, 71%) 100%);
-  border-radius: 100px;
-  padding: 8px 20px;
+  background: linear-gradient(135deg, #360505 0%, #8d082f 45%, hsl(337, 100%, 71%) 100%);
+  color: #fff6ff;
+  border: 1px solid rgba(250, 110, 150, 0.4);
+  text-transform: uppercase;
+  box-shadow: 0 15px 35px rgba(141, 8, 47, 0.3);
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease,
+    filter 0.2s ease;
 }
 
 .notReady {
-  background: linear-gradient(to right, #8d087b 0%, #000000 100%);
-  border-radius: 100px;
-  padding: 8px 20px;
+  background: linear-gradient(135deg, #8d087b 0%, #4720a8 60%, #000000 100%);
+  color: #fdf3ff;
+  border: 1px solid rgba(162, 113, 255, 0.4);
+  text-transform: uppercase;
+  box-shadow: 0 15px 35px rgba(71, 32, 168, 0.35);
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease,
+    filter 0.2s ease;
+}
+
+.ready:hover,
+.ready:focus,
+.notReady:hover,
+.notReady:focus {
+  transform: translateY(-3px);
+  box-shadow: 0 22px 45px rgba(71, 32, 168, 0.45);
+  filter: brightness(1.05);
 }
 </style>

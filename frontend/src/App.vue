@@ -53,7 +53,9 @@
         <img src="../public/img/Aprendiz_Mago.png" alt="Aprenent de Mag" class="profile-avatar" />
         <div class="profile-info">
           <span class="badge">Perfil de l'Aprenent</span>
+          <span class="profile-label">Nom del Usuari</span>
           <h3>NomUser</h3>
+          <span class="profile-label">Títol del Mag</span>
           <h5>Aprenent de màgia</h5>
         </div>
         <p>
@@ -96,7 +98,14 @@
   </div>
 
   <div class="fondoLobby" v-else-if="vista === 'preGame'">
-    <h2>Sala: {{ currentRoom }}</h2>
+    <div class="lobby-header">
+      <span class="lobby-label">Sala</span>
+      <h1 class="lobby-room-name">{{ currentRoom }}</h1>
+      <p class="lobby-subtitle">
+        Abraça el teu poder arcà i dirigeix la sala com un autèntic mag. Com més flueixis amb la
+        màgia, més llegendari serà el vostre duel.
+      </p>
+    </div>
     <viewLobby
       :socket-c="socket"
       :llista-jug="jugadors"
@@ -108,9 +117,9 @@
     />
   </div>
 
-  <div v-else-if="vista === 'game'">
-    <div id="jugador">
-      <div id="partida">
+  <div class="fondoLobby" v-else-if="vista === 'game'">
+    <div class="game-layout">
+      <div class="game-main">
         <GameEngine
           :socket="socket"
           :jugador="jugador"
@@ -120,12 +129,14 @@
           :spell-category="spellCategory"
         />
       </div>
-      <div id="tempsRestant">
-        <TempsRestant :temps-inicial="tempsInicial" :socket="socket" />
-      </div>
-      <div id="ranquing">
-        <RankingComponent :llista-jug="jugadors" />
-      </div>
+      <aside class="game-sidebar">
+        <div class="game-timer">
+          <TempsRestant :temps-inicial="tempsInicial" :socket="socket" />
+        </div>
+        <div class="game-ranking">
+          <RankingComponent :llista-jug="jugadors" />
+        </div>
+      </aside>
     </div>
   </div>
 
@@ -409,12 +420,86 @@ hr {
 /* --- Contenedor del formulario --- */
 .fondoLobby {
   position: relative; /* ¡MUY IMPORTANTE! */
-  background: linear-gradient(to bottom, #15131e 32%, #006aff 100%);
+  background: linear-gradient(180deg, #141021 0%, #1c1535 38%, #0057ff 100%);
   border-radius: 25px;
-  padding: 20px;
+  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.35);
+  padding: 40px 60px;
   width: 98%;
   height: 95%;
-  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  box-sizing: border-box;
+}
+
+.game-layout {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 24px;
+  width: 100%;
+  height: 100%;
+  box-sizing: border-box;
+}
+
+.game-main {
+  background: rgba(15, 12, 30, 0.65);
+  border: 1px solid rgba(136, 114, 255, 0.35);
+  border-radius: 22px;
+  padding: 28px;
+  box-shadow: 0 20px 48px rgba(0, 0, 0, 0.35);
+  overflow: hidden;
+}
+
+.game-sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.game-timer,
+.game-ranking {
+  background: rgba(15, 12, 30, 0.65);
+  border: 1px solid rgba(136, 114, 255, 0.35);
+  border-radius: 22px;
+  padding: 18px 22px;
+  box-shadow: 0 20px 48px rgba(0, 0, 0, 0.35);
+  flex: 1;
+  overflow: hidden;
+}
+
+.game-timer {
+  flex: 0 0 auto;
+}
+
+.lobby-header {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: -10px;
+}
+
+.lobby-label {
+  font-size: 1.1rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #bba8ff;
+}
+
+.lobby-room-name {
+  margin: -20px 0 0 0;
+  font-size: 4rem;
+  font-weight: 300;
+  color: #f5f0ff;
+  letter-spacing: 0.02em;
+}
+
+.lobby-subtitle {
+  margin: 4px 0 0 0;
+  font-size: 1.15rem;
+  max-width: 640px;
+  color: rgba(229, 223, 255, 0.78);
+  line-height: 1.6;
 }
 
 /* --- ESTILS DEL LOGIN CONTAINER --- */
@@ -538,16 +623,17 @@ hr {
   background-color: #15131e;
   border: 1px solid #cb95e6;
   border-radius: 20px;
-  padding: 20px;
+  padding: 30px;
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
 
   /* Maquetación interna 2x2 */
   display: grid;
-  grid-template-columns: auto 1fr; /* Col 1 (avatar) auto, Col 2 (texto) resto */
+  grid-template-columns: 180px 1fr; /* Col 1 (avatar), Col 2 (texto) */
   grid-template-rows: auto auto; /* Fila 1 (arriba) auto, Fila 2 (texto bajo) auto */
-  gap: 8px;
+  column-gap: 30px;
+  row-gap: 20px;
   align-items: center;
 }
 
@@ -574,7 +660,7 @@ hr {
 /* --- Estilos comunes para las tarjetas (Acciones y Lista) --- */
 .actions-container,
 .rooms-grid-bottom {
-  padding: 25px;
+  padding: 35px;
   background-color: #15131e;
   border: 1px solid #cb95e6;
   border-radius: 20px;
@@ -587,8 +673,12 @@ hr {
 .profile-avatar {
   grid-row: 1 / 2;
   grid-column: 1 / 2;
-  width: 90%;
-  height: 90%;
+  width: 100%;
+  height: 100%;
+  aspect-ratio: 1;
+  justify-self: center;
+  align-self: center;
+  object-fit: cover;
   border-radius: 100%; /* Para hacerlo redondo */
   border: 1px solid #a88bff; /* Borde lila */
 }
@@ -614,14 +704,30 @@ hr {
   color: #d8cfff; /* Un lila/blanco más suave */
 }
 
+.profile-label {
+  display: block;
+  font-size: 0.75rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #bba8ff;
+  margin-left: 5px;
+  margin-bottom: 2px;
+  margin-top: 16px;
+}
+
+.profile-info .profile-label:first-of-type {
+  margin-top: 8px;
+}
+
 /* Seleccionamos el paràgrafo <p> HIJO DIRECTO de .profile-card */
 .profile-card > p {
   grid-row: 2 / 3; /* Fila 2 (la de abajo) */
   grid-column: 1 / 3; /* Ocupa todo el ancho */
-  margin: 0;
+  margin: 15px 0 0 0;
   color: #e0e0e0;
-  font-size: 0.95rem;
-  line-height: 1.6;
+  font-size: 1.05rem;
+  line-height: 1.75;
 }
 
 .profile-card .rosa {
@@ -635,26 +741,22 @@ hr {
 .actions-container .badge {
   background: linear-gradient(to right, #7b2cff, #a855f7); /* Morado */
   color: white;
-  padding: 6px 16px;
+  padding: 12px 28px;
   border-radius: 9999px; /* Forma de píldora */
-  font-size: 1rem;
+  font-size: 1.1rem;
   font-weight: 500;
   display: inline-block;
   margin-bottom: 10px; /* Espacio bajo el badge */
   text-align: center;
-  width: 200px;
+  min-width: 220px;
   align-self: center;
-}
-/*Es posa sense el border ja que sino semblan botons*/
-.actions-container .badge {
-  background: none;
 }
 
 .action-card {
   flex: 1; /* Cada tarjeta ocupa 50% */
   display: flex;
   flex-direction: column; /* Apila elementos internos verticalmente */
-  gap: 15px; /* Espacio entre badge, input, botón, etc. */
+  gap: 28px; /* Más espacio entre badge, input, botón, etc. */
 }
 
 /* Estilo para inputs de texto dentro de las tarjetas */
@@ -665,7 +767,7 @@ hr {
   outline: none;
   color: #f0f0f0;
   width: 100%;
-  padding: 12px 15px;
+  padding: 16px 18px;
   box-sizing: border-box;
   text-align: left;
   font-size: 1rem;
@@ -689,10 +791,10 @@ hr {
   background-color: transparent;
   border: 1px solid #ffffff; /* Borde blanco */
   border-radius: 15px; /* Forma de PÍLDORA */
-  padding: 5px 10px; /* Padding */
+  padding: 10px 20px; /* Padding */
   transition: 0.2s ease-in-out;
 
-  width: 50%; /* Ancho del toggle */
+  width: 60%; /* Ancho del toggle */
 }
 
 /* 2. Ocultamos el checkbox real */
@@ -720,27 +822,34 @@ hr {
 }
 
 .action-card button {
-  background-color: white;
-  color: #15131e; /* Text oscuro */
-  border: none;
-  border-radius: 5px;
+  background: linear-gradient(135deg, #f8f9ff 0%, #cdbaff 55%, #8d75ff 100%);
+  color: #140f2b;
+  border: 1px solid rgba(207, 189, 255, 0.55);
+  border-radius: 18px;
   width: 100%; /* Ocupa todo el ancho */
-  padding: 12px 15px;
-  font-size: 0.95rem;
-  font-weight: 500;
+  padding: 18px 24px;
+  font-size: 1rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
   cursor: pointer;
-  transition: all 0.2s ease-in-out;
+  box-shadow: 0 12px 28px rgba(117, 74, 255, 0.2);
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease,
+    filter 0.2s ease;
 }
 
 /* Efecto Hover (brillantor) */
 .action-card button:hover,
 .action-card button:focus {
-  border-radius: 15px;
+  transform: translateY(-2px);
+  box-shadow: 0 18px 38px rgba(117, 74, 255, 0.3);
+  filter: brightness(1.05);
 }
 
 /* --- 4.3. (Internos) Lista de Salas --- */
 .rooms-grid-bottom h2 {
-  margin: 0;
+  margin: 5px 0 15px 0;
   flex-shrink: 0;
 }
 
@@ -784,13 +893,14 @@ hr {
   justify-content: space-between;
   align-items: center;
   gap: 10px;
-  padding: 10px 15px;
-  margin-bottom: 8px;
+  padding: 16px 20px;
+  margin-bottom: 18px;
   /* Estilo oscuro para la lista */
-  border: 1px solid rgba(136, 114, 255, 0.2);
-  border-radius: 10px;
-  background-color: rgba(21, 19, 30, 0.5);
+  border: 1px solid rgba(122, 98, 255, 0.35);
+  border-radius: 16px;
+  background: linear-gradient(135deg, rgba(69, 51, 151, 0.65), rgba(16, 14, 30, 0.85));
   color: #f0f0f0;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.25);
 }
 
 .room-item button {
