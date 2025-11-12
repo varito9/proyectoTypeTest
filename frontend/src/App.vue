@@ -88,9 +88,7 @@
               <span>👥 {{ room.playerCount }} jugadors</span>
               <span v-if="room.beingPlayed" class="status-playing"> | 🎮 En partida</span>
             </div>
-            <button @click="joinExistingRoom(room.name)" :disabled="room.beingPlayed">
-              Unir-se
-            </button>
+            <button @click="joinExistingRoom(room.name)">Unir-se</button>
           </li>
         </ul>
       </div>
@@ -825,17 +823,6 @@ hr {
 .status-playing {
   color: #ffaa00; /* Naranja para "En partida" */
   font-style: italic;
-}
-
-.room-item button:hover:not(:disabled) {
-  opacity: 0.8;
-}
-.room-item button:disabled {
-  background-color: #555;
-  background: #555;
-  color: #999;
-  cursor: not-allowed;
-  opacity: 0.7;
 }
 
 .notification {
