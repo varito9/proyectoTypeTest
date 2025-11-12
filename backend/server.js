@@ -95,11 +95,6 @@ const mageDefinitions = [
   },
 ];
 
-//Funció per sortejar als mags
-function getRandomMage() {
-  return mageDefinitions[Math.floor(Math.random() * mageDefinitions.length)];
-}
-
 // ----------------------------------------------------
 // NUEVA FUNCIÓN: Obtener textos de la BDD
 // ----------------------------------------------------
@@ -534,10 +529,14 @@ io.on("connection", (socket) => {
     });
 
     const gameDataForSpectators = [];
+    //Es fa uno copia per no accionar directament al array de mags
+    let availableMages = [...mageDefinitions];
 
     // 2. Per a cada jugador, assignar mag i obtenir text
     for (const player of playingPlayers) {
-      player.mage = getRandomMage();
+      const randomIndex = Math.floor(Math.random() * availableMages.length);
+      player.mage = availableMages.splice(randomIndex, 1)[0];
+
       const spellLines = await getRandomSpellText(player.mage.category, 20);
 
       const spellTextForPlayer =
