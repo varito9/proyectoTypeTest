@@ -62,7 +62,7 @@
             placeholder="Codi d'Accés (6 dígits)"
             maxlength="6"
           />
-          <button @click="joinPrivateRoom">Unir-se a Sala Privada amb Codi</button>
+          <button @click="joinPrivateRoom">Unir-se a Sala Privada</button>
         </div>
       </div>
 
@@ -101,9 +101,7 @@
 
   <div v-else-if="vista === 'game'">
     <div id="jugador">
-      <!-- Div on mostrem la informació de la partida (els textos)-->
       <div id="partida">
-        <!--Truquem al game Engine i enviem les props que rebrà aquest component-->
         <GameEngine
           :socket="socket"
           :jugador="jugador"
@@ -111,11 +109,9 @@
           :room-name="currentRoom"
         />
       </div>
-      <!--Div on mostrem el temps restant de la partida-->
       <div id="tempsRestant">
         <TempsRestant :temps-inicial="tempsInicial" :socket="socket" />
       </div>
-      <!--Div on llistem els usuaris de la partida i els accerts i errors d'aquests-->
       <div id="ranquing">
         <RankingComponent :llista-jug="jugadors" />
       </div>
@@ -317,35 +313,42 @@ function resetToRoomList() {
 </script>
 
 <style>
-/* 1. CODI PER LA LOGIN PAGE */
+/* 1. IMPORTACIONES Y ESTILOS GLOBALES */
 @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;700&display=swap');
 
-body{
+body {
   margin: 0;
 }
-/* Estil global per centrar el contingut */
+
+/* Estilo global para centrar el contenido */
 #app {
   font-family: 'Poppins', sans-serif;
   margin: 0;
   background-color: #15131e;
-  color: #f0f0f0; 
-  height: 100vh; 
+  color: #f0f0f0;
+  height: 100vh;
   display: flex;
-  justify-content: center; 
-  align-items: center; 
+  justify-content: center;
+  align-items: center;
   overflow: hidden;
 }
 
-button, 
+button,
 input {
-  font-family: inherit; 
+  font-family: inherit;
 }
 
-/* --- ESTILS DEL CONTENEDOR 'fondo' --- */
+hr {
+  margin: 30px 0;
+  border: 0;
+  border-top: 1px solid rgba(136, 114, 255, 0.2); /* Borde lila */
+}
+
+/* 2. CONTENEDOR PRINCIPAL (FONDO) */
 .fondo {
-  position: relative; /* ¡MUY IMPORTANTE! */
-  background: linear-gradient(to bottom, #15131e 32%, #006aff 100%);  
-  border-radius: 25px; 
+  position: relative; /* ¡MUY IMPORTANTE para los magos! */
+  background: linear-gradient(to bottom, #15131e 32%, #006aff 100%);
+  border-radius: 25px;
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -358,17 +361,19 @@ input {
   min-height: 95%;
 }
 
-/* --- ESTILS DEL LOGIN CONTAINER --- */
+/* 3. PÁGINA DE LOGIN (!isConnected) */
+
+/* --- Contenedor del formulario --- */
 .login-container {
-  position: relative; /* Necesario para que z-index funcione */
+  position: relative; /* Necesario para z-index */
   z-index: 2;
   width: 50%;
   text-align: center; /* Centra el texto */
   height: 80%;
   display: flex;
-  flex-direction: column; 
-  align-items: center;    
-  justify-content: center; 
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
   gap: 15px;
 }
 
@@ -378,30 +383,30 @@ input {
 
 .login-container .badge {
   background: linear-gradient(to right, #2c2b53 0%, #6a6aff 100%);
-  border-radius: 100px; 
-  color: white; 
-  padding: 8px 20px; 
-  display: inline-flex; 
+  border-radius: 100px;
+  color: white;
+  padding: 8px 20px;
+  display: inline-flex;
   align-items: center;
-  justify-content: center; 
+  justify-content: center;
 }
 
 .login-container .login-input {
-  background-color: transparent; 
-  border: none;                  
-  outline: none;                 
-  border-bottom: 2px solid #cb95e6; 
-  color: #f0f0f0; 
-  width: 70%; 
+  background-color: transparent;
+  border: none;
+  outline: none;
+  border-bottom: 2px solid #cb95e6;
+  color: #f0f0f0;
+  width: 70%;
   padding: 10px 0;
   text-align: center;
-  font-size: 1.1rem; 
-  margin-bottom: 20px; 
+  font-size: 1.1rem;
+  margin-bottom: 20px;
 }
 
 .login-container .login-input::placeholder {
-  color: #cb95e6; 
-  opacity: 1; 
+  color: #cb95e6;
+  opacity: 1;
 }
 
 .login-container .login-button {
@@ -412,159 +417,135 @@ input {
   padding: 10px 30px;
   cursor: pointer;
   transition: 0.3s ease-in-out;
-  border: solid 1px transparent; 
-  background-clip: padding-box; 
+  border: solid 1px transparent;
+  background-clip: padding-box;
 }
 
-.login-container .login-button:hover, 
+.login-container .login-button:hover,
 .login-container .login-button:focus {
-  background: transparent; 
+  background: transparent;
   border-color: #ffffff;
   color: #ffffff;
   outline: none;
 }
 
-/* --- ESTILS DELS MAGS (LOGIN) --- */
+/* --- Imágenes de Magos (Login) --- */
 .mago {
-  position: absolute; 
-  width: 20%;         
+  position: absolute;
+  width: 20%;
   height: auto;
-  z-index: 1;         
+  z-index: 1;
 }
 .mago-obscuro {
-  bottom: -80px;  
-  left: -10px;     
+  bottom: -80px;
+  left: -10px;
   transform: rotate(20deg);
   width: 30%;
 }
 .mago-tierra {
-  bottom: -70px;  
-  right: 15px;     
-  transform: rotate(-20deg); 
+  bottom: -70px;
+  right: 15px;
+  transform: rotate(-20deg);
   width: 30%;
 }
 .mago-fuego {
-  top: -130px;      
-  left: 20px;      
+  top: -130px;
+  left: 20px;
   transform: rotate(145deg);
   width: 30%;
 }
 .mago-angelical {
-  top: -150px;      
-  right: 50px;     
+  top: -150px;
+  right: 50px;
   transform: rotate(-150deg);
   width: 31%;
 }
 
-/* --- (NOU CSS) ESTILS PÀGINA DE SALES (!joinedRoom) --- */
+/* 4. PÁGINA DE SALAS (!joinedRoom) */
 
+/* --- Layout principal de la página de salas (Grid) --- */
 .rooms-page-container {
   display: grid;
   grid-template-columns: 1fr 1.5fr;
   grid-template-rows: auto 1fr;
-  gap: 25px; /* L'espai entre els 3 blocs */
+  gap: 25px; /* Espacio entre los 3 bloques */
   width: 100%;
   height: 100%;
   padding: 20px;
-  box-sizing: border-box; 
+  box-sizing: border-box;
 }
 
-/* --- 1. Perfil (Dalt-Esquerra) --- */
+/* --- 4.1. Tarjeta de Perfil (Arriba-Izquierda) --- */
 .profile-card {
-  /* Posició a la graella principal */
-  grid-column: 1 / 2; 
-  grid-row: 1 / 2;    
-  
-  /* Estil "Glassmorphism" (Del disseny) */
+  grid-column: 1 / 2;
+  grid-row: 1 / 2;
+
+  /* Estilo "Glassmorphism" */
   background-color: #15131e;
-  border: 1px solid #CB95E6; 
-  border-radius: 20px; 
-  padding: 20px; /* Padding més generós (del disseny) */
-  backdrop-filter: blur(8px); 
+  border: 1px solid #CB95E6;
+  border-radius: 20px;
+  padding: 20px;
+  backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
 
-  /* Maquetació interna 2x2 (La que has demanat) */
+  /* Maquetación interna 2x2 */
   display: grid;
-  grid-template-columns: auto 1fr; /* Col 1 (avatar) auto, Col 2 (text) la resta */
-  grid-template-rows: auto auto;   /* Fila 1 (dalt) auto, Fila 2 (text baix) auto */
-  gap: 8px; 
-  align-items: center; 
+  grid-template-columns: auto 1fr; /* Col 1 (avatar) auto, Col 2 (texto) resto */
+  grid-template-rows: auto auto;   /* Fila 1 (arriba) auto, Fila 2 (texto bajo) auto */
+  gap: 8px;
+  align-items: center;
 }
 
-/* --- 2. Accions (Dalt-Dreta) --- */
+/* --- 4.2. Contenedor de Acciones (Arriba-Derecha) --- */
 .actions-container {
-  grid-column: 2 / 3; 
-  grid-row: 1 / 2;    
+  grid-column: 2 / 3;
+  grid-row: 1 / 2;
+
+  /* Layout de 2 columnas */
+  display: flex;
+  flex-direction: row;
+  gap: 20px; /* Espacio ENTRE las 2 tarjetas */
+}
+
+/* --- 4.3. Lista de Salas (Abajo) --- */
+.rooms-grid-bottom {
+  grid-column: 1 / 3; /* Ocupa todo el ancho de abajo */
+  grid-row: 2 / 3;
+  min-height: 0;
   display: flex;
   flex-direction: column;
-  gap: 20px; /* Espai entre les targetes d'acció */
-}
-.actions-container button{
-  background: linear-gradient(to right, #2c2b53 0%, #6a6aff 100%);
-  border-radius: 100px; 
-  color: white; 
-  padding: 8px 20px; 
-  display: inline-flex; 
-  align-items: center;
-  justify-content: center; 
 }
 
-/* --- 3. Llista de Sales (Baix) --- */
-.rooms-grid-bottom {
-  grid-column: 1 / 3; /* Ocupa TOT l'ample de baix */
-  grid-row: 2 / 3;    
-  overflow-y: auto;
-}
-
-/* Estils genèrics per les caixes (HE TRET .profile-card d'aquí) */
+/* --- Estilos comunes para las tarjetas (Acciones y Lista) --- */
 .actions-container, .rooms-grid-bottom {
-  padding: 15px;
-  background-color: #15131e; /* Mateix fons que el profile */
-  border: 1px solid #CB95E6; /* Mateixa vora */
+  padding: 25px;
+  background-color: #15131e;
+  border: 1px solid #CB95E6;
   border-radius: 20px;
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
   box-shadow: 0 4px 12px rgba(203, 149, 230, 0.25);
 }
 
-/* --- (NOU) Estils interns del Profile Card --- */
-
-.profile-avatar{
-  /* Posició a la graella interna */
+/* --- 4.1. (Internos) Tarjeta de Perfil --- */
+.profile-avatar {
   grid-row: 1 / 2;
   grid-column: 1 / 2;
-  
-  /* Estils de l'avatar (del disseny) */
   width: 90%;
   height: 90%;
-  border-radius: 15px; /* Per fer-lo rodó */
-  border: 1px solid #a88bff; /* Vora lila */
-}
-
-/* Estil pel badge "Perfil de l'Aprenent" */
-.profile-card .badge, .actions-container .badge {
-  background: linear-gradient(to right, #7b2cff, #a855f7); /* Morat */
-  color: white;
-  padding: 6px 16px;
-  border-radius: 9999px; /* Forma de píndola */
-  font-size: 1rem;
-  font-weight: 500;
-  display: inline-block;
-  margin-bottom: 10px; /* Espai sota el badge */
-  text-align: center;
-  width: 200px;
+  border-radius: 100%; /* Para hacerlo redondo */
+  border: 1px solid #a88bff; /* Borde lila */
 }
 
 .profile-info {
-  /* Posició a la graella interna */
   grid-row: 1 / 2;
   grid-column: 2 / 3;
 }
 
-.profile-info h3, 
+.profile-info h3,
 .profile-info h5 {
-  margin: 0; /* Traiem marges per defecte */
+  margin: 0;
   margin-left: 5px;
 }
 
@@ -575,43 +556,168 @@ input {
 .profile-info h5 {
   font-size: 1.1rem;
   font-weight: 400;
-  color: #d8cfff; /* Un lila/blanc més suau */
-}
-.profile-card .rosa{
-  color: #CB95E6;
+  color: #d8cfff; /* Un lila/blanco más suave */
 }
 
-/* Seleccionem el paràgraf <p> QUE SIGUI FILL DIRECTE de .profile-card */
+/* Seleccionamos el paràgrafo <p> HIJO DIRECTO de .profile-card */
 .profile-card > p {
-  /* Posició a la graella interna */
-  grid-row: 2 / 3;    /* Fila 2 (la de baix) */
-  grid-column: 1 / 3; /* Ocupa TOT l'ample */
-  
-  /* Ajustos de text del disseny */
-  margin: 0; 
+  grid-row: 2 / 3;    /* Fila 2 (la de abajo) */
+  grid-column: 1 / 3; /* Ocupa todo el ancho */
+  margin: 0;
   color: #e0e0e0;
   font-size: 0.95rem;
   line-height: 1.6;
 }
-.rooms-grid-bottom h2{
+
+.profile-card .rosa {
+  color: #CB95E6;
+}
+
+/* --- 4.2. (Internos) Contenedor de Acciones --- */
+
+/* Badge (común para Perfil y Acciones) */
+.profile-card .badge, .actions-container .badge {
+  background: linear-gradient(to right, #7b2cff, #a855f7); /* Morado */
+  color: white;
+  padding: 6px 16px;
+  border-radius: 9999px; /* Forma de píldora */
+  font-size: 1rem;
+  font-weight: 500;
+  display: inline-block;
+  margin-bottom: 10px; /* Espacio bajo el badge */
+  text-align: center;
+  width: 200px;
+  align-self: center;
+}
+
+.action-card {
+  flex: 1; /* Cada tarjeta ocupa 50% */
+  display: flex;
+  flex-direction: column; /* Apila elementos internos verticalmente */
+  gap: 15px; /* Espacio entre badge, input, botón, etc. */
+}
+
+/* Estilo para inputs de texto dentro de las tarjetas */
+.action-card input[placeholder] {
+  background-color: #15131e;
+  border: 1px solid #CB95E6;
+  border-radius: 10px;
+  outline: none;
+  color: #f0f0f0;
+  width: 100%;
+  padding: 12px 15px;
+  box-sizing: border-box;
+  text-align: left;
+  font-size: 1rem;
+}
+
+.action-card input[placeholder]::placeholder {
+  color: #a0a0a0; /* Un gris más suave para el placeholder */
+  opacity: 1;
+}
+
+/* 1. Estilo del LABEL (el contenedor) como un botón "pill" */
+.action-card label {
+  display: flex;
+  align-items: center;
+  justify-content: center; /* Centramos el texto */
+  cursor: pointer;
+  font-size: 0.95rem;
+  color: #e0e0e0;
+
+  /* Estilo "normal" (no marcado) */
+  background-color: transparent;
+  border: 1px solid #ffffff; /* Borde blanco */
+  border-radius: 15px; /* Forma de PÍLDORA */
+  padding: 5px 10px; /* Padding */
+  transition: 0.2s ease-in-out;
+
+  width: 50%; /* Ancho del toggle */
+}
+
+/* 2. Ocultamos el checkbox real */
+.action-card label input[type="checkbox"] {
+  display: none; /* Lo ocultamos */
+}
+
+/* 3. Estilo CUANDO ESTÁ MARCADO (usando :has()) */
+.action-card label:has(input[type="checkbox"]:checked) {
+  /* Estilo activo (verde) */
+  background: linear-gradient(to right, #046e04, #55f79e);
+  border-color: #45ce99;
+  color: #ffffff;
+}
+
+/* 4. Hover para el estado normal */
+.action-card label:not(:has(input[type="checkbox"]:checked)):hover {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+/* 5. Focus para accesibilidad */
+.action-card label:has(input[type="checkbox"]:focus-visible) {
+  outline: 2px solid #6a6aff;
+  outline-offset: 2px;
+}
+
+.action-card button {
+  background-color: white;
+  color: #15131e; /* Text oscuro */
+  border: none;
+  border-radius: 5px;
+  width: 100%; /* Ocupa todo el ancho */
+  padding: 12px 15px;
+  font-size: 0.95rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+}
+
+/* Efecto Hover (brillantor) */
+.action-card button:hover, .action-card button:focus {
+  border-radius: 15px
+}
+
+/* --- 4.3. (Internos) Lista de Salas --- */
+.rooms-grid-bottom h2 {
   margin: 0;
+  flex-shrink: 0;
 }
 
-/* --- (CSS ANTIC) ESTILS DE LES LLISTES DE SALES --- */
-/* Mantenim els estils originals per la llista de sales públiques */
-
-.ready {
-  background-color: greenyellow;
-}
-.notReady {
-  background-color: red;
-}
 .room-list {
   list-style: none;
   padding: 0;
-  max-width: 100%; /* Canviat de 500px a 100% */
-  margin: 20px 0; /* Canviat auto per 0 */
+  max-width: 100%;
+  margin: 5px 0;
+  flex-grow: 1; /* Hace que la lista ocupe el espacio vertical disponible */
+  overflow-y: auto; /* AÑADE EL SCROLL AQUÍ */
+
+  padding-right: 10px; /* Espacio para la barra de scroll */
 }
+
+/* Estilos de la barra de scroll (Webkit) */
+.room-list::-webkit-scrollbar {
+  width: 12px; /* Ancho de la barra */
+}
+
+.room-list::-webkit-scrollbar-track {
+  background: transparent;
+  border-radius: 10px;
+}
+
+.room-list::-webkit-scrollbar-thumb {
+  background-color: #a855f7; /* Color lila */
+  border-radius: 10px;
+  border: 3px solid #15131e; /* Borde oscuro para "separar" */
+}
+
+.room-list::-webkit-scrollbar-thumb:hover {
+  background-color: #b875ff; /* Lila más claro */
+}
+
+.room-list::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
 .room-item {
   display: flex;
   justify-content: space-between;
@@ -619,12 +725,30 @@ input {
   gap: 10px;
   padding: 10px 15px;
   margin-bottom: 8px;
-  /* Estil fosc per la llista de sales */
+  /* Estilo oscuro para la lista */
   border: 1px solid rgba(136, 114, 255, 0.2);
   border-radius: 10px;
-  background-color: rgba(21, 19, 30, 0.5); 
+  background-color: rgba(21, 19, 30, 0.5);
   color: #f0f0f0;
 }
+
+.room-item button {
+  background-color: #f0f0f0; /* Fondo gris claro */
+  color: #15131e; /* Texto oscuro */
+  border: 1px solid #f0f0f0;
+  border-radius: 8px;
+  padding: 6px 14px; /* Padding más pequeño */
+  font-size: 0.85rem; /* Fuente más pequeña */
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+}
+
+.room-item button:hover, .room-item button:focus {
+  background-color: rgba(0, 0, 0, 0.0); /* Transparente */
+  color: #f0f0f0; /* Texto claro */
+}
+
 .room-info {
   display: flex;
   gap: 15px;
@@ -635,7 +759,7 @@ input {
   color: #ffffff;
 }
 .status-playing {
-  color: #ffaa00; /* Taronja per "En partida" */
+  color: #ffaa00; /* Naranja para "En partida" */
   font-style: italic;
 }
 
@@ -644,14 +768,17 @@ input {
 }
 .room-item button:disabled {
   background-color: #555;
-  background: #555; /* Treu el gradient si està desactivat */
+  background: #555;
   color: #999;
   cursor: not-allowed;
   opacity: 0.7;
 }
-hr {
-  margin: 30px 0;
-  border: 0;
-  border-top: 1px solid rgba(136, 114, 255, 0.2); /* Vora lila */
+
+/* 5. ESTILOS DE ESTADO (Lobby) */
+.ready {
+  background-color: greenyellow;
+}
+.notReady {
+  background-color: red;
 }
 </style>
