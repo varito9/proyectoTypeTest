@@ -596,6 +596,11 @@ io.on("connection", (socket) => {
     room.gameStats = gameDataForSpectators;
     room.spectatorIds = spectators.map((p) => p.id);
 
+    // 4. Iniciar el temporitzador del joc
+    if (room.timer) clearInterval(room.timer);
+    broadcastRoomState(roomName);
+    broadcastRoomList();
+
     spectators.forEach((spectator) => {
       io.to(spectator.socketId).emit("gameStarted", {
         time: tempsRestant,
@@ -603,9 +608,6 @@ io.on("connection", (socket) => {
       });
       io.to(spectator.socketId).emit("spectatorGameView", room.gameStats);
     });
-
-    // 4. Iniciar el temporitzador del joc
-    if (room.timer) clearInterval(room.timer);
 
     let remainingTime = tempsRestant;
     room.timer = setInterval(() => {
@@ -626,9 +628,6 @@ io.on("connection", (socket) => {
         io.to(roomName).emit("updateTime", { time: remainingTime });
       }
     }, 1000);
-
-    broadcastRoomState(roomName);
-    broadcastRoomList();
   });
 
   // Puntos y Errores (se mantienen)
