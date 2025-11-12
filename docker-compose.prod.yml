@@ -49,11 +49,11 @@ services:
       - ./.env
     environment:
       - NODE_ENV=production
-      # El backend se conectará a 'mongo' por la red interna de Docker.
-      - MONGO_HOST=mongo
+      # El backend se conectará a 'mysql' por la red interna de Docker.
+      - DB_HOST=mysql
     depends_on:
-      mongo:
-        condition: service_started
+      mysql:
+        condition: service_healthy
     networks:
       - trr-net
     restart: unless-stopped
