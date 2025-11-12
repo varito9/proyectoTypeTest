@@ -845,7 +845,7 @@ hr {
 }
 
 .notification.success {
-  background: linear-gradient(to right, #04832100, #1e7e34); /* Verd */
+  background: linear-gradient(to right, #ff058e 0%, #000000 100%);
 }
 
 .notification.error {

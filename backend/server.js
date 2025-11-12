@@ -640,7 +640,7 @@ io.on("connection", (socket) => {
     if (!player.powerUpEarned) {
       player.correctWordsInARow++;
 
-      if (player.correctWordsInARow === 1) {
+      if (player.correctWordsInARow === 2) {
         player.powerUpEarned = true;
         io.to(player.socketId).emit("powerUpReady", player.mage);
       }

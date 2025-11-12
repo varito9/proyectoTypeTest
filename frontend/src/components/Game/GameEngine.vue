@@ -18,21 +18,23 @@
       <div class="mage-info" v-if="jugador.mage">
         <h3>Ets: {{ jugador.mage.name }}</h3>
         <p>
-          <strong>Power-up (1 encert seguit):</strong>
+          <strong>Power-up (3 encert de frases seguit):</strong>
           {{ jugador.mage.powerUp }} - <em>{{ jugador.mage.description }}</em>
         </p>
-      </div>
-
-      <div class="powerup-container" v-if="powerUpState.ready && !powerUpState.used">
-        <button @click="usePowerUp" class="powerup-button">
-          🔥 ATACAR A UN OPONENT ALEATORI 🔥
-        </button>
       </div>
 
       <h2 class="negro">Escriu la paraula següent:</h2>
 
       <div class="paraules" v-if="paraulaActual">
-        <span class="paraula actual">
+        <span
+          class="paraula actual"
+          :class="{
+            'powerup-word':
+              powerUpState.ready &&
+              !powerUpState.used &&
+              powerUpState.wordIndex === estatDelJoc.indexParaulaActiva,
+          }"
+        >
           <span
             v-for="(lletra, letterIndex) in paraulaActual.text.split('')"
             :key="letterIndex"
@@ -119,6 +121,7 @@ const powerUpState = reactive({
   ready: false,
   used: false,
   name: '',
+  wordIndex: null,
 })
 
 const debuffState = reactive({
@@ -180,6 +183,16 @@ function validarProgres() {
   textAnterior.value = inputActual
 
   if (inputActual === paraulaObjectiu) {
+    if (
+      powerUpState.ready &&
+      !powerUpState.used &&
+      estatDelJoc.indexParaulaActiva === powerUpState.wordIndex
+    ) {
+      // ¡Era esta! Llama a usePowerUp() automáticamente
+      usePowerUp()
+      // El estado se limpiará cuando llegue el evento 'powerUpUsed'
+    }
+
     props.socket.emit('addPoints', { roomName: props.roomName, id: props.jugador.id })
     paraulaActiva.value.estat = 'completada'
     estatDelJoc.indexParaulaActiva++
@@ -280,6 +293,8 @@ function usePowerUp() {
   if (!powerUpState.ready || powerUpState.used) return
   // No actualitzem l'estat aquí, esperem la confirmació del servidor
   props.socket.emit('usePowerUp', { roomName: props.roomName, id: props.jugador.id })
+  powerUpState.ready = false
+  powerUpState.used = true
 }
 
 // 👁️ CONTROL D'ESPECTADOR
@@ -322,6 +337,7 @@ watch(
       powerUpState.ready = false
       powerUpState.used = false
       powerUpState.name = ''
+      powerUpState.wordIndex = null
 
       debuffState.isActive = false
       debuffState.type = null
@@ -346,11 +362,14 @@ props.socket.on('powerUpReady', (mage) => {
   showNotification('🔥 Power-up a punt! 🔥')
   powerUpState.ready = true
   powerUpState.name = mage.powerUp
+  powerUpState.wordIndex = estatDelJoc.indexParaulaActiva
 })
 
 props.socket.on('powerUpUsed', () => {
   showNotification(`Has utilitzat el teu poder: ${powerUpState.name}!`)
+  powerUpState.ready = false
   powerUpState.used = true // Actualitzem l'estat al rebre la confirmació
+  powerUpState.wordIndex = null
 })
 
 props.socket.on('powerUpFailed', ({ message }) => {
@@ -478,24 +497,6 @@ props.socket.on('tsunamiHit', () => {
 .powerup-container {
   margin-bottom: 20px;
 }
-.powerup-button {
-  background-color: #ffc107;
-  color: #333;
-  border: none;
-  padding: 12px 25px;
-  font-size: 1.1rem;
-  font-weight: bold;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  box-shadow: 0 4px 15px rgba(255, 193, 7, 0.4);
-}
-.powerup-button:hover {
-  background-color: #ffca2c;
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(255, 193, 7, 0.5);
-}
-
 /* --- DEBUFFS --- */
 #game-engine {
   position: relative;
@@ -535,5 +536,24 @@ props.socket.on('tsunamiHit', () => {
 
 .negro {
   color: white;
+}
+
+.paraula.powerup-word {
+  color: #ffc107; /* Texto oscuro para que se lea bien */
+  font-weight: bold;
+  border-radius: 4px;
+  /* Animación para que parpadee y llame la atención */
+  animation: pulse-powerup 1s infinite alternate;
+}
+
+@keyframes pulse-powerup {
+  from {
+    transform: scale(1);
+    box-shadow: 0 0 5px rgba(255, 193, 7, 0.5);
+  }
+  to {
+    transform: scale(1.05);
+    box-shadow: 0 0 15px rgba(255, 193, 7, 0.8);
+  }
 }
 </style>
