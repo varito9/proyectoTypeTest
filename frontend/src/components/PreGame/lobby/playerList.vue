@@ -10,8 +10,8 @@
         <button @click="deletePlayer(player.id)">Expulsar jugador</button>
       </template>
 
-      <span v-if="player.isReady">Preparat</span>
-      <span v-else>No Preparat</span>
+      <span v-if="player.isReady">Jugador</span>
+      <span v-else>Espectador</span>
       <div class="estat" :class="player.isReady ? 'ready' : 'notReady'"></div>
     </li>
   </ul>

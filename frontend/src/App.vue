@@ -17,7 +17,7 @@
           <span>👥 {{ room.playerCount }} jugadores</span>
           <span v-if="room.beingPlayed" class="status-playing"> | 🎮 En partida</span>
         </div>
-        <button @click="joinExistingRoom(room.name)" :disabled="room.beingPlayed">Unirse</button>
+        <button @click="joinExistingRoom(room.name)">Unirse</button>
       </li>
     </ul>
 
@@ -57,6 +57,8 @@
           :jugador="jugador"
           :llista-jug="jugadors"
           :room-name="currentRoom"
+          :spell-text="spellText"
+          :spell-category="spellCategory"
         />
       </div>
       <!--Div on mostrem el temps restant de la partida-->
@@ -96,6 +98,8 @@ const joinedRoom = ref(false)
 const jugador = ref({ name: '', id: null, role: 'player' })
 const jugadors = ref([])
 const tempsInicial = ref(0)
+const spellText = ref([])
+const spellCategory = ref('')
 
 const currentRoom = ref('')
 const roomInput = ref('')
@@ -132,6 +136,8 @@ socket.on('roomJoined', ({ roomName }) => {
 })
 
 socket.on('updateRoomState', (room) => {
+    if (vista.value === 'endGame') return
+
   roomState.value = room
   jugadors.value = [...room.players]
   const yo = room.players.find((p) => p.id === jugador.value.id)
@@ -140,8 +146,24 @@ socket.on('updateRoomState', (room) => {
   if (room.config && room.config.time) {
     tempsInicial.value = room.config.time
   }
+
+    if (room.beingPlayed && jugador.value.role === 'spectator') {
+      vista.value = 'game'
+    }
 })
 
+  socket.on('updateRanking', (ranking) => {
+    if (vista.value === 'game') {
+      jugadors.value = [...ranking]
+    }
+  })
+  // ESTO CAMBIA LA VISTA A 'game' CUANDO EL SERVIDOR MANDA EL INICIO
+  socket.on('gameStarted', ({ time, spellText: newSpellText, category }) => {
+    vista.value = 'game'
+    tempsInicial.value = time
+    spellText.value = newSpellText || []
+    spellCategory.value = category || ''
+  })
 socket.on('updateRanking', (ranking) => {
   if (vista.value === 'game') {
     jugadors.value = [...ranking]

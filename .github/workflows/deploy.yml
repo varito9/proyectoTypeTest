@@ -34,14 +34,10 @@ jobs:
             echo "NODE_ENV=${{ secrets.NODE_ENV }}" > .env
             echo "PORT=${{ secrets.PORT }}" >> .env
             echo "FRONTEND_URL=${{ secrets.FRONTEND_URL }}" >> .env
-            # Credenciales de MongoDB (root y usuario de la app)
-            echo "MONGO_ROOT_USER=${{ secrets.MONGO_ROOT_USER }}" >> .env
-            echo "MONGO_ROOT_PASSWORD=${{ secrets.MONGO_ROOT_PASSWORD }}" >> .env
-            echo "MONGO_DATABASE=${{ secrets.MONGO_DATABASE }}" >> .env
-            echo "MONGO_USER=${{ secrets.MONGO_USER }}" >> .env
-            echo "MONGO_PASSWORD=${{ secrets.MONGO_PASSWORD }}" >> .env
-            echo "MONGO_URI=${{ secrets.MONGO_URI }}" >> .env
-
+            echo "MYSQL_ROOT_PASSWORD=${{ secrets.MYSQL_ROOT_PASSWORD }}" >> .env
+            echo "MYSQL_DATABASE=${{ secrets.MYSQL_DATABASE }}" >> .env
+            echo "MYSQL_USER=${{ secrets.MYSQL_USER }}" >> .env
+            echo "MYSQL_PASSWORD=${{ secrets.MYSQL_PASSWORD }}" >> .env
             # Variable para el build del frontend (Vite)
             # Tu código usa VITE_BACKEND_URL, no VITE_API_URL o VITE_SOCKET_URL
             echo "VITE_BACKEND_URL=${{ secrets.FRONTEND_URL }}" >> .env

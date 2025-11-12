@@ -4,6 +4,7 @@ const express = require("express");
 const http = require("http");
 const { Server } = require("socket.io");
 const { randomUUID } = require("crypto"); // 🔑 Importado para generar códigos
+const mysql = require('mysql2/promise'); // 💾 Importar mysql2 con soporte para promesas
 
 const nodeEnv = process.env.NODE_ENV;
 let port;
@@ -24,9 +25,156 @@ const app = express();
 const server = http.createServer(app);
 const io = new Server(server, { cors: corsOptions });
 
+// --- CONFIGURACIÓN DE LA BASE DE DATOS ---
+const dbConfig = {
+  host: process.env.DB_HOST || 'localhost', // Usar la variable de entorno o localhost
+  user: process.env.MYSQL_USER || 'trr_user_dev',
+  password: process.env.MYSQL_PASSWORD || 'trr_password_dev',
+  database: process.env.MYSQL_DATABASE || 'trr_db_dev',
+};
+
+let dbConnection;
+
+async function connectToDatabase() {
+  try {
+    // Asegúrate de que el host apunte al servicio de docker 'mysql' si estás usando docker-compose.
+    dbConnection = await mysql.createConnection(dbConfig);
+    console.log("Conectado a la base de datos MySQL exitosamente! 💾");
+  } catch (err) {
+    console.error("Error al conectar con la base de datos MySQL:", err);
+    // En un entorno real, aquí deberías manejar reintentos o un mensaje de error más robusto.
+  }
+}
+
+connectToDatabase();
+// ----------------------------------------
+
 app.get("/", (req, res) => res.send("Type Racer Royale backend ready 🏁"));
 
 let rooms = [];
+// Mapea el mago (name) con su categoría (category) de la BDD. 
+// He añadido categorías asumidas para los magos que no son 'Foc' basándome en los ejemplos típicos.
+const mageDefinitions = [
+  {
+    name: "Mag de Foc",
+    category: "foc", // 🔑 Coincide con tu ejemplo 'foc'
+    powerUp: "Ignicio",
+    description: "Posa tilde a totes les lletres",
+  },
+  {
+    name: "Mag de Gel",
+    category: "gel", // 🔑 CORRECCIÓN: Coincide con 'gel' en la BDD
+    powerUp: "Congelar",
+    description: "Congela l'input no saps en quina palabra et trobes",
+  },
+  {
+    name: "Mag d'Aigua",
+    category: "aigua", // 🔑 CORRECCIÓN: Coincide con 'aigua' en la BDD
+    powerUp: "Tsunami",
+    description:
+      "Si no escrius la paraula que toca tens que tornar a escriure tota la frase",
+  },
+  {
+    name: "Mag Oscur",
+    category: "foscor", // 🔑 CORRECCIÓN: Coincide con 'foscor' en la BDD
+    powerUp: "Apagon",
+    description: "Torna tota la pantalla molt oscura ",
+  },
+  {
+    name: "Mag de Llum",
+    category: "llum", // 🔑 CORRECCIÓN: Coincide con 'llum' en la BDD
+    powerUp: "Flash",
+    description: "Ilumina la pantalla de forma intermitent",
+  },
+  {
+    name: "Mag de Jungla",
+    category: "selva", // 🔑 CORRECCIÓN: Coincide con 'selva' en la BDD
+    powerUp: "Enredadera",
+    description: "Posa a tota una paraula plena de caràcters especials",
+  },
+];
+
+//Funció per sortejar als mags
+function getRandomMage() {
+  return mageDefinitions[Math.floor(Math.random() * mageDefinitions.length)];
+}
+
+// ----------------------------------------------------
+// NUEVA FUNCIÓN: Obtener textos de la BDD
+// ----------------------------------------------------
+async function getRandomSpellText(category, limit = null) {
+  if (!dbConnection) return null;
+
+  try {
+    // 1. Obtener una lista de TÍTULOS y MAG (nivel/id numérico) únicos para esa categoría.
+    const [titles] = await dbConnection.execute(
+      `SELECT DISTINCT titol, mag FROM datos_ejemplo WHERE categoria = ?`,
+      [category]
+    );
+
+    if (titles.length === 0) {
+      console.warn(`No se encontraron conjuros para la categoría: ${category}`);
+      return null;
+    }
+
+    // 2. Elegir un conjuro (titol/mag) aleatorio
+    const randomTitleIndex = Math.floor(Math.random() * titles.length);
+    const { titol, mag: rawMag } = titles[randomTitleIndex];
+    const mag = parseInt(rawMag, 10); // Explicitly cast to integer
+    if (isNaN(mag)) {
+      console.error(`[ERROR] 'mag' is NaN for category: ${category}, titol: ${titol}, rawMag: ${rawMag}`);
+      return null;
+    }
+
+    // 3. Obtener todas las líneas de texto para ese conjuro, ordenadas por linea_orden.
+    let query = `SELECT linea_texto FROM datos_ejemplo WHERE categoria = ? AND titol = ? AND mag = ? ORDER BY linea_orden ASC`;
+    const params = [category, titol, mag];
+
+    if (limit) {
+      const numericLimit = parseInt(limit, 10); // Explicitly cast to integer
+      if (isNaN(numericLimit)) {
+        console.error(`[ERROR] 'limit' is NaN for category: ${category}, titol: ${titol}, limit: ${limit}`);
+        return null;
+      }
+      query += ` LIMIT ${numericLimit}`;
+    }
+
+    console.log(`[DEBUG] Query for spell text: ${query}`);
+    console.log(`[DEBUG] Parameters for spell text: ${JSON.stringify(params)}`);
+
+    const [lines] = await dbConnection.execute(query, params);
+
+    // 4. Mapear el resultado para obtener solo un array de strings (las líneas de texto)
+    const textLines = lines.map(row => row.linea_texto.trim());
+
+    console.log(`Conjuro seleccionado para ${category}: ${titol} (Mag: ${mag}). Líneas: ${textLines.length}`);
+    return textLines; // 🔑 CORRECCIÓN: Faltaba este return. Sin él, la función devolvía undefined.
+
+  } catch (error) {
+    console.error("Error al obtener el texto del conjuro:", error);
+    return null; // En caso de error, devuelve null
+  }
+}
+// ----------------------------------------------------
+
+//Funció per asignar admin
+function assignNewAdmin(room) {
+  if (room.players.length === 0) return;
+
+  let newAdmin = null;
+
+  if (room.beingPlayed) {
+    newAdmin = room.players.find((p) => p.role !== "spectator");
+  } else {
+    newAdmin = room.players[0];
+  }
+
+  if (newAdmin) {
+    newAdmin.role = "admin";
+    io.to(newAdmin.socketId).emit("youAreNowAdmin");
+  } // Si els que queden només son espectadors els jugadors la sala es queda temporalment sense admin fins que acabi el joc ja que en EndGame es reasigna
+}
+
 // Funció per crear rooms
 function createRoom(roomName, hostPlayer, isPrivate = false) {
   const room = {
@@ -41,6 +189,7 @@ function createRoom(roomName, hostPlayer, isPrivate = false) {
     // --- NUEVAS PROPIEDADES ---
     gameStats: [], // Para guardar el progreso de cada jugador
     spectatorIds: [], // Para saber a quién enviar los datos
+    spellText: [], // 🔑 Guardaremos el texto (array de líneas) del conjuro
     // -------------------------
   };
   rooms.push(room);
@@ -97,20 +246,38 @@ function endGame(roomName) {
 
   room.beingPlayed = false;
 
+  const ranking = [...room.players]
+    .filter((player) => player.role === "player" || player.role === "admin")
+    .sort((a, b) => b.points - a.points || a.errors - b.errors);
+
   //netejem els stats
   room.gameStats = [];
   room.spectatorIds = [];
+  room.spellText = []; // 🔑 Limpiar el texto del conjuro
+
+  let adminExists = false;
+
   // Resetear roles de espectadores que eran players antes del juego
   room.players.forEach((p) => {
-    if (p.role !== "admin") {
+    p.debuff = { type: null, duration: 0 };
+    if (p.role === "admin") {
+      adminExists = true;
+      p.isReady = true;
+    } else if (p.role === "spectator") {
+      // Si era espectador, pasa al lobby com jugador,
       p.role = "player";
+      p.isReady = true;
+    } else {
+      p.role = "player";
+      p.isReady = true;
     }
-    p.isReady = false;
   });
 
-  const ranking = [...room.players]
-    .filter((player) => player.role === "player")
-    .sort((a, b) => b.points - a.points || a.errors - b.errors);
+  if (!adminExists && room.players.length > 0) {
+    room.players[0].role = "admin";
+    room.players[0].isReady = true;
+    io.to(room.players[0].socketId).emit("youAreNowAdmin");
+  }
 
   io.to(roomName).emit("gameFinished", { ranking });
 
@@ -148,9 +315,15 @@ io.on("connection", (socket) => {
       socketId: socket.id,
       name: name,
       role: "player",
-      isReady: false,
+      isReady: true,
       points: 0,
       errors: 0,
+
+      //powerups
+      mage: null,
+      powerUpEarned: false,
+      correctWordsInARow: 0,
+      debuff: { type: null, duration: 0 },
     };
 
     console.log(`Jugador conectado: ${name} (${id})`);
@@ -213,15 +386,15 @@ io.on("connection", (socket) => {
     if (room.players.length >= 6)
       return socket.emit("error", { message: "La sala está plena" });
 
-    if (room.players.length === 0 && !room.beingPlayed) {
-      player.role = "admin";
-    }
-
     if (room.beingPlayed) {
       player.role = "spectator";
+
+      if (!room.spectatorIds.includes(player.id)) {
+        room.spectatorIds.push(player.id);
+      }
     }
 
-    player.isReady = false;
+    player.isReady = true;
     player.points = 0;
     player.errors = 0;
 
@@ -233,6 +406,7 @@ io.on("connection", (socket) => {
     }
 
     broadcastRoomState(room.name);
+    broadcastRoomList();
     console.log(`${player.name} se unió a ${room.name}`);
   });
 
@@ -311,8 +485,7 @@ io.on("connection", (socket) => {
     broadcastRoomState(roomName);
   });
 
-  // Iniciar juego (se mantiene)
-  socket.on("startGame", ({ roomName, id }) => {
+  socket.on("startGame", async ({ roomName, id }) => {
     const room = findRoom(roomName);
     if (!room) return;
 
@@ -320,47 +493,98 @@ io.on("connection", (socket) => {
     if (!admin) return;
 
     room.beingPlayed = true;
+    const tempsRestant = room.config.time;
 
-    room.players.forEach((p) => {
+    // 1. Determinar quins jugadors juguen i quins miren
+    const playingPlayers = [];
+    const spectators = [];
+
+    room.players.forEach(p => {
+      // Reset stats per a tothom
       p.points = 0;
       p.errors = 0;
-      if (p.id === admin.id) {
-        p.isReady = true;
-        p.role = "admin";
-      } else if (!p.isReady) {
-        p.role = "spectator";
+      p.powerUpEarned = false;
+      p.correctWordsInARow = 0;
+      p.debuff = { type: null, duration: 0 };
+      p.mage = null;
+
+      // Assignar rol
+      if ((p.id === admin.id) || (p.isReady && p.role !== 'spectator')) {
+        p.role = p.id === admin.id ? 'admin' : 'player';
+        playingPlayers.push(p);
+      } else {
+        p.role = 'spectator';
+        spectators.push(p);
       }
     });
 
-    room.spectatorIds = room.players
-      .filter((p) => p.role === "spectator")
-      .map((p) => p.id);
+    const gameDataForSpectators = [];
 
-    room.gameStats = room.players
-      .filter((p) => p.role !== "spectator")
-      .map((p) => ({
-        id: p.id,
-        name: p.name, // Añadido para que el espectador sepa de quién es
+    // 2. Per a cada jugador, assignar mag i obtenir text
+    for (const player of playingPlayers) {
+      player.mage = getRandomMage();
+      const spellLines = await getRandomSpellText(player.mage.category, 20);
+      
+      const spellTextForPlayer = (!spellLines || spellLines.length === 0)
+        ? [{ text: "el text no ha carregat correctament.", estat: 'pendent' }]
+        : spellLines.map(line => ({ text: line.toLowerCase(), estat: 'pendent' }));
+
+      console.log(`[startGame] Player ${player.name} (${player.id}) assigned mage category: ${player.mage.category}`);
+      if (spellTextForPlayer.length > 0) {
+        console.log(`[startGame] Player ${player.name} received spell text snippet: "${spellTextForPlayer[0].text.substring(0, 50)}..."`);
+      } else {
+        console.log(`[startGame] Player ${player.name} received no spell text.`);
+      }
+
+      // Enviar l'event individualment a cada jugador
+      io.to(player.socketId).emit("gameStarted", {
+        time: tempsRestant,
+        spellText: spellTextForPlayer,
+        category: player.mage.category,
+      });
+      console.log(`[DEBUG] Sending to player ${player.name} (ID: ${player.id}, SocketID: ${player.socketId}):`);
+      console.log(`[DEBUG]   Category: ${player.mage.category}`);
+      console.log(`[DEBUG]   Spell Text (first line): ${spellTextForPlayer.length > 0 ? spellTextForPlayer[0].text : 'N/A'}`);
+
+      // Preparar dades per als espectadors
+      gameDataForSpectators.push({
+        id: player.id,
+        name: player.name,
         textEntrat: "",
         indexParaulaActiva: 0,
-        paraules: [], // Asegúrate de que tu cliente espera esto
-      }));
-
-    let tempsRestant = room.config.time;
-
-    io.to(roomName).emit("gameStarted", { time: tempsRestant });
-
-    if (room.timer) {
-      clearInterval(room.timer);
+        paraules: spellTextForPlayer,
+      });
     }
 
-    room.timer = setInterval(() => {
-      tempsRestant--;
+    // 3. Actualitzar l'estat de la sala per als espectadors
+    room.gameStats = gameDataForSpectators;
+    room.spectatorIds = spectators.map(p => p.id);
 
-      if (tempsRestant <= 0) {
+    spectators.forEach(spectator => {
+      io.to(spectator.socketId).emit("gameStarted", { time: tempsRestant, spellText: [] });
+      io.to(spectator.socketId).emit("spectatorGameView", room.gameStats);
+    });
+
+    // 4. Iniciar el temporitzador del joc
+    if (room.timer) clearInterval(room.timer);
+    
+    let remainingTime = tempsRestant;
+    room.timer = setInterval(() => {
+      remainingTime--;
+      room.players.forEach((p) => {
+        if (p.debuff.duration > 0) {
+          p.debuff.duration--;
+          if (p.debuff.duration === 0) {
+            p.debuff.type = null;
+            io.to(p.socketId).emit("debuffEnded");
+          }
+        }
+      });
+
+      if (remainingTime <= 0) {
         endGame(roomName);
       } else {
-        io.to(roomName).emit("updateTime", { time: tempsRestant });
+        io.to(roomName).emit("updateTime", { time: remainingTime });
       }
     }, 1000);
 
@@ -376,6 +600,15 @@ io.on("connection", (socket) => {
     const player = room.players.find((p) => p.id === id);
     if (!player || player.role === "spectator") return;
 
+    if (!player.powerUpEarned) {
+      player.correctWordsInARow++;
+
+      if (player.correctWordsInARow === 1) {
+        player.powerUpEarned = true;
+        io.to(player.socketId).emit("powerUpReady", player.mage);
+      }
+    }
+
     player.points++;
     broadcastRanking(roomName);
   });
@@ -388,9 +621,56 @@ io.on("connection", (socket) => {
     if (!player || player.role === "spectator") return;
 
     player.errors++;
+    player.correctWordsInARow = 0;
+
+    if (player.debuff.type === "Tsunami") {
+      player.debuff.type = null;
+      player.debuff.duration = 0;
+
+      // Avisa al client que ha de resetejar el seu progrés
+      io.to(player.socketId).emit("tsunamiHit");
+      io.to(player.socketId).emit("debuffEnded");
+    }
+
     broadcastRanking(roomName);
   });
-  // data  conté: {id: 0, textEntrat: '', indexParaulaActiva: 0, paraules: []}
+
+  //Us de powerUps
+  socket.on("usePowerUp", ({ roomName, id }) => {
+    const room = findRoom(roomName);
+    if (!room) return;
+
+    const attacker = room.players.find((p) => p.id === id);
+    if (!attacker || !attacker.mage) return;
+
+    // Trobar objectius (tots menys l'atacant i espectadors)
+    const targets = room.players.filter(
+      (p) => p.id !== id && p.role !== "spectator" && p.debuff.type === null // No atacar a algú que ja està sota un efecte
+    );
+
+    if (targets.length === 0) {
+      // Si no hi ha objectius, notificar a l'atacant i no fer res més
+      return io.to(attacker.socketId).emit("powerUpFailed", {
+        message: "No s'ha trobat un objectiu vàlid.",
+      });
+    }
+
+    const target = targets[Math.floor(Math.random() * targets.length)];
+    const powerUpType = attacker.mage.powerUp;
+    const durationInSeconds = 10;
+
+    target.debuff = { type: powerUpType, duration: durationInSeconds };
+
+    io.to(target.socketId).emit("debuffReceived", {
+      type: powerUpType,
+      duration: durationInSeconds * 1000,
+    });
+
+    // Avisar a l'atacant que el seu power-up s'ha utilitzat correctament
+    io.to(attacker.socketId).emit("powerUpUsed");
+  });
+
+  // data  conté: {id: 0, textEntrat: '', indexParaulaActiva: 0, paraules: []}
   socket.on("playerGameStatus", ({ roomName, data }) => {
     const room = findRoom(roomName);
     if (!room || !room.beingPlayed) return;
@@ -400,17 +680,17 @@ io.on("connection", (socket) => {
       playerStat.textEntrat = data.textEntrat;
       playerStat.indexParaulaActiva = data.indexParaulaActiva;
       playerStat.paraules = data.paraules;
+
+      // 🔑 CORRECCIÓN: Enviar actualización a los espectadores en tiempo real
+      // Cada vez que un jugador actualiza su estado, lo enviamos a los espectadores.
+      const updatedGameStats = room.gameStats;
+      room.spectatorIds.forEach(spectatorId => {
+        io.to(room.players.find(p => p.id === spectatorId)?.socketId).emit("spectatorGameView", updatedGameStats);
+      });
     } else {
       return;
     }
-
-    // 2. Enviar el estado COMPLETO a todos los espectadores de la sala
-    room.spectatorIds.forEach((spectatorId) => {
-      const spectator = room.players.find((p) => p.id === spectatorId);
-      if (spectator) {
-        io.to(spectator.socketId).emit("spectatorGameView", room.gameStats);
-      }
-    });
+    // La actualización para el espectador se maneja ahora en el setInterval de startGame
   });
 
   socket.on("disconnect", () => {
@@ -423,20 +703,18 @@ io.on("connection", (socket) => {
 
       room.players = room.players.filter((p) => p.socketId !== socket.id);
 
-      if (player.role === "admin" && room.players.length > 0) {
-        room.players[0].role = "admin";
-        io.to(room.players[0].socketId).emit("youAreNowAdmin");
+      if (player.role === "admin") {
+        assignNewAdmin(room); // ⭐️ Usa la nueva función
       }
 
       removeEmptyRooms();
-
       broadcastRoomState(room.name);
       broadcastRoomList();
     });
     console.log("Player disconnected");
   });
 
-  // Jugar de nuevo (se mantiene)
+  // Jugar de nuevo (se mantienen)
   socket.on("playAgain", ({ roomName, id }) => {
     const room = findRoom(roomName);
     if (!room) return;
@@ -444,7 +722,7 @@ io.on("connection", (socket) => {
     const player = room.players.find((p) => p.id === id);
     if (!player) return;
 
-    player.isReady = false;
+    player.isReady = true;
     player.points = 0;
     player.errors = 0;
 
@@ -466,9 +744,8 @@ io.on("connection", (socket) => {
     console.log(`${player.name} ha salido de la sala ${roomName}`);
 
     // Si era admin, pasar rol al siguiente jugador
-    if (player.role === "admin" && room.players.length > 0) {
-      room.players[0].role = "admin";
-      io.to(room.players[0].socketId).emit("youAreNowAdmin");
+    if (player.role === "admin") {
+      assignNewAdmin(room);
     }
 
     // Refrescar estat

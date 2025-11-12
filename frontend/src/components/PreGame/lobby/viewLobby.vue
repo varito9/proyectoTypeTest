@@ -18,16 +18,13 @@
     />
 
     <button v-if="isAdmin" @click="changeTime">Temps: {{ tempsEstablert }}</button>
+    <button v-if="isAdmin" @click="startGame">Comenzar</button>
     <button
-      v-if="isAdmin"
-      :class="isMajority ? '' : 'disabled'"
-      @click="startGame"
-      :disabled="!isMajority"
+      v-if="!isAdmin"
+      :class="imReady ? 'ready' : 'notReady'"
+      @click="toggleReady(jugadorClient.id)"
     >
-      Comenzar
-    </button>
-    <button :class="imReady ? 'ready' : 'notReady'" @click="toggleReady(jugadorClient.id)">
-      {{ imReady ? 'Listo ✔️' : 'No Listo ❌' }}
+      {{ imReady ? 'Observar' : 'Jugar' }}
     </button>
   </div>
 </template>
@@ -56,21 +53,6 @@ const accessCodeToDisplay = computed(() => {
     return currentRoomState.value.accessCode
   }
   return null
-})
-
-// LÓGICA DE MAYORÍA CORREGIDA
-const isMajority = computed(() => {
-  if (!llistaJugadors.value) return false
-
-  const playersInGame = llistaJugadors.value.filter(
-    (p) => p.role === 'player' || p.role === 'admin',
-  )
-
-  if (playersInGame.length === 0) return false
-
-  const readyPlayers = playersInGame.filter((player) => player.isReady === true).length
-
-  return playersInGame.length === 1 ? true : readyPlayers >= Math.ceil(playersInGame.length / 2)
 })
 
 const isAdmin = computed(() => jugadorClient.value.role === 'admin')
@@ -111,7 +93,7 @@ function changeTime() {
 
 function startGame() {
   // Verificar conexión antes de emitir
-  if (socket.value && socket.value.connected && isAdmin.value && isMajority.value) {
+  if (socket.value && socket.value.connected && isAdmin.value) {
     socket.value.emit('startGame', {
       id: jugadorClient.value.id,
       roomName: props.roomName,
