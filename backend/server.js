@@ -4,7 +4,7 @@ const express = require("express");
 const http = require("http");
 const { Server } = require("socket.io");
 const { randomUUID } = require("crypto"); // 🔑 Importado para generar códigos
-const mysql = require('mysql2/promise'); // 💾 Importar mysql2 con soporte para promesas
+const mysql = require("mysql2/promise"); // 💾 Importar mysql2 con soporte para promesas
 
 const nodeEnv = process.env.NODE_ENV;
 let port;
@@ -28,10 +28,10 @@ const io = new Server(server, { cors: corsOptions });
 
 // --- CONFIGURACIÓN DE LA BASE DE DATOS ---
 const dbConfig = {
-  host: process.env.DB_HOST || 'localhost', // Usar la variable de entorno o localhost
-  user: process.env.MYSQL_USER || 'trr_user_dev',
-  password: process.env.MYSQL_PASSWORD || 'trr_password_dev',
-  database: process.env.MYSQL_DATABASE || 'trr_db_dev',
+  host: process.env.DB_HOST || "localhost", // Usar la variable de entorno o localhost
+  user: process.env.MYSQL_USER || "trr_user_dev",
+  password: process.env.MYSQL_PASSWORD || "trr_password_dev",
+  database: process.env.MYSQL_DATABASE || "trr_db_dev",
 };
 
 let dbConnection;
@@ -53,7 +53,7 @@ connectToDatabase();
 app.get("/", (req, res) => res.send("Type Racer Royale backend ready 🏁"));
 
 let rooms = [];
-// Mapea el mago (name) con su categoría (category) de la BDD. 
+// Mapea el mago (name) con su categoría (category) de la BDD.
 // He añadido categorías asumidas para los magos que no son 'Foc' basándome en los ejemplos típicos.
 const mageDefinitions = [
   {
@@ -123,7 +123,9 @@ async function getRandomSpellText(category, limit = null) {
     const { titol, mag: rawMag } = titles[randomTitleIndex];
     const mag = parseInt(rawMag, 10); // Explicitly cast to integer
     if (isNaN(mag)) {
-      console.error(`[ERROR] 'mag' is NaN for category: ${category}, titol: ${titol}, rawMag: ${rawMag}`);
+      console.error(
+        `[ERROR] 'mag' is NaN for category: ${category}, titol: ${titol}, rawMag: ${rawMag}`
+      );
       return null;
     }
 
@@ -134,7 +136,9 @@ async function getRandomSpellText(category, limit = null) {
     if (limit) {
       const numericLimit = parseInt(limit, 10); // Explicitly cast to integer
       if (isNaN(numericLimit)) {
-        console.error(`[ERROR] 'limit' is NaN for category: ${category}, titol: ${titol}, limit: ${limit}`);
+        console.error(
+          `[ERROR] 'limit' is NaN for category: ${category}, titol: ${titol}, limit: ${limit}`
+        );
         return null;
       }
       query += ` LIMIT ${numericLimit}`;
@@ -146,11 +150,12 @@ async function getRandomSpellText(category, limit = null) {
     const [lines] = await dbConnection.execute(query, params);
 
     // 4. Mapear el resultado para obtener solo un array de strings (las líneas de texto)
-    const textLines = lines.map(row => row.linea_texto.trim());
+    const textLines = lines.map((row) => row.linea_texto.trim());
 
-    console.log(`Conjuro seleccionado para ${category}: ${titol} (Mag: ${mag}). Líneas: ${textLines.length}`);
+    console.log(
+      `Conjuro seleccionado para ${category}: ${titol} (Mag: ${mag}). Líneas: ${textLines.length}`
+    );
     return textLines; // 🔑 CORRECCIÓN: Faltaba este return. Sin él, la función devolvía undefined.
-
   } catch (error) {
     console.error("Error al obtener el texto del conjuro:", error);
     return null; // En caso de error, devuelve null
@@ -409,6 +414,11 @@ io.on("connection", (socket) => {
     broadcastRoomState(room.name);
     broadcastRoomList();
     console.log(`${player.name} se unió a ${room.name}`);
+
+    const joinMsg = `${player.name} s'ha unit a la sala.`;
+    socket.broadcast
+      .to(room.name)
+      .emit("lobbyNotification", { message: joinMsg, type: "info" });
   });
 
   socket.on("getRoomList", () => {
@@ -463,8 +473,12 @@ io.on("connection", (socket) => {
     }
 
     removeEmptyRooms();
-
     broadcastRoomState(roomName);
+    const kickMsg = `${kickedPlayer.name} ha estat expulsat per l'admin.`;
+    io.to(roomName).emit("lobbyNotification", {
+      message: kickMsg,
+      type: "error",
+    });
   });
 
   // Transferir Admin
@@ -500,7 +514,7 @@ io.on("connection", (socket) => {
     const playingPlayers = [];
     const spectators = [];
 
-    room.players.forEach(p => {
+    room.players.forEach((p) => {
       // Reset stats per a tothom
       p.points = 0;
       p.errors = 0;
@@ -510,11 +524,11 @@ io.on("connection", (socket) => {
       p.mage = null;
 
       // Assignar rol
-      if ((p.id === admin.id) || (p.isReady && p.role !== 'spectator')) {
-        p.role = p.id === admin.id ? 'admin' : 'player';
+      if (p.id === admin.id || (p.isReady && p.role !== "spectator")) {
+        p.role = p.id === admin.id ? "admin" : "player";
         playingPlayers.push(p);
       } else {
-        p.role = 'spectator';
+        p.role = "spectator";
         spectators.push(p);
       }
     });
@@ -525,16 +539,31 @@ io.on("connection", (socket) => {
     for (const player of playingPlayers) {
       player.mage = getRandomMage();
       const spellLines = await getRandomSpellText(player.mage.category, 20);
-      
-      const spellTextForPlayer = (!spellLines || spellLines.length === 0)
-        ? [{ text: "el text no ha carregat correctament.", estat: 'pendent' }]
-        : spellLines.map(line => ({ text: line.toLowerCase(), estat: 'pendent' }));
 
-      console.log(`[startGame] Player ${player.name} (${player.id}) assigned mage category: ${player.mage.category}`);
+      const spellTextForPlayer =
+        !spellLines || spellLines.length === 0
+          ? [{ text: "el text no ha carregat correctament.", estat: "pendent" }]
+          : spellLines.map((line) => ({
+              text: line.toLowerCase(),
+              estat: "pendent",
+            }));
+
+      console.log(
+        `[startGame] Player ${player.name} (${player.id}) assigned mage category: ${player.mage.category}`
+      );
       if (spellTextForPlayer.length > 0) {
-        console.log(`[startGame] Player ${player.name} received spell text snippet: "${spellTextForPlayer[0].text.substring(0, 50)}..."`);
+        console.log(
+          `[startGame] Player ${
+            player.name
+          } received spell text snippet: "${spellTextForPlayer[0].text.substring(
+            0,
+            50
+          )}..."`
+        );
       } else {
-        console.log(`[startGame] Player ${player.name} received no spell text.`);
+        console.log(
+          `[startGame] Player ${player.name} received no spell text.`
+        );
       }
 
       // Enviar l'event individualment a cada jugador
@@ -543,9 +572,15 @@ io.on("connection", (socket) => {
         spellText: spellTextForPlayer,
         category: player.mage.category,
       });
-      console.log(`[DEBUG] Sending to player ${player.name} (ID: ${player.id}, SocketID: ${player.socketId}):`);
+      console.log(
+        `[DEBUG] Sending to player ${player.name} (ID: ${player.id}, SocketID: ${player.socketId}):`
+      );
       console.log(`[DEBUG]   Category: ${player.mage.category}`);
-      console.log(`[DEBUG]   Spell Text (first line): ${spellTextForPlayer.length > 0 ? spellTextForPlayer[0].text : 'N/A'}`);
+      console.log(
+        `[DEBUG]   Spell Text (first line): ${
+          spellTextForPlayer.length > 0 ? spellTextForPlayer[0].text : "N/A"
+        }`
+      );
 
       // Preparar dades per als espectadors
       gameDataForSpectators.push({
@@ -559,16 +594,19 @@ io.on("connection", (socket) => {
 
     // 3. Actualitzar l'estat de la sala per als espectadors
     room.gameStats = gameDataForSpectators;
-    room.spectatorIds = spectators.map(p => p.id);
+    room.spectatorIds = spectators.map((p) => p.id);
 
-    spectators.forEach(spectator => {
-      io.to(spectator.socketId).emit("gameStarted", { time: tempsRestant, spellText: [] });
+    spectators.forEach((spectator) => {
+      io.to(spectator.socketId).emit("gameStarted", {
+        time: tempsRestant,
+        spellText: [],
+      });
       io.to(spectator.socketId).emit("spectatorGameView", room.gameStats);
     });
 
     // 4. Iniciar el temporitzador del joc
     if (room.timer) clearInterval(room.timer);
-    
+
     let remainingTime = tempsRestant;
     room.timer = setInterval(() => {
       remainingTime--;
@@ -685,8 +723,11 @@ io.on("connection", (socket) => {
       // 🔑 CORRECCIÓN: Enviar actualización a los espectadores en tiempo real
       // Cada vez que un jugador actualiza su estado, lo enviamos a los espectadores.
       const updatedGameStats = room.gameStats;
-      room.spectatorIds.forEach(spectatorId => {
-        io.to(room.players.find(p => p.id === spectatorId)?.socketId).emit("spectatorGameView", updatedGameStats);
+      room.spectatorIds.forEach((spectatorId) => {
+        io.to(room.players.find((p) => p.id === spectatorId)?.socketId).emit(
+          "spectatorGameView",
+          updatedGameStats
+        );
       });
     } else {
       return;
@@ -705,8 +746,14 @@ io.on("connection", (socket) => {
       room.players = room.players.filter((p) => p.socketId !== socket.id);
 
       if (player.role === "admin") {
-        assignNewAdmin(room); // ⭐️ Usa la nueva función
+        assignNewAdmin(room);
       }
+
+      const disconnectMsg = `${player.name} s'ha desconnectat.`;
+      io.to(room.name).emit("lobbyNotification", {
+        message: disconnectMsg,
+        type: "info",
+      });
 
       removeEmptyRooms();
       broadcastRoomState(room.name);
@@ -744,6 +791,11 @@ io.on("connection", (socket) => {
 
     console.log(`${player.name} ha salido de la sala ${roomName}`);
 
+    const leaveMsg = `${player.name} ha sortit de la sala.`;
+    io.to(room.name).emit("lobbyNotification", {
+      message: leaveMsg,
+      type: "info",
+    });
     // Si era admin, pasar rol al siguiente jugador
     if (player.role === "admin") {
       assignNewAdmin(room);

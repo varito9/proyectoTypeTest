@@ -29,7 +29,7 @@
         </button>
       </div>
 
-      <h2>Escriu la paraula següent:</h2>
+      <h2 class="negro">Escriu la paraula següent:</h2>
 
       <div class="paraules" v-if="paraulaActual">
         <span class="paraula actual">
@@ -47,9 +47,7 @@
         Carregant següent paraula...
       </div>
 
-      <div v-else-if="acabada">
-        🎉 Has completat el conjur! Esperant la resta de jugadors... 🎉
-      </div>
+      <div v-else-if="acabada">🎉 Has completat el conjur! Esperant la resta de jugadors... 🎉</div>
 
       <div v-else>Carregant conjur...</div>
 
@@ -164,9 +162,7 @@ function showNotification(message, duration = 3000) {
 // 🧠 FUNCIONS DE CONTROL DEL JOC
 function initializeActiveWord() {
   paraulaActiva.value =
-    estatDelJoc.paraules && estatDelJoc.paraules.length > 0
-      ? estatDelJoc.paraules[0]
-      : null
+    estatDelJoc.paraules && estatDelJoc.paraules.length > 0 ? estatDelJoc.paraules[0] : null
 }
 
 function validarProgres() {
@@ -209,9 +205,7 @@ function getClasseLletra(indexLletra) {
   const lletraIntroduida = estatDelJoc.textEntrat[indexLletra]
 
   if (lletraIntroduida === undefined) {
-    return indexLletra === estatDelJoc.textEntrat.length
-      ? 'lletra-actual'
-      : 'lletra-noArribada'
+    return indexLletra === estatDelJoc.textEntrat.length ? 'lletra-actual' : 'lletra-noArribada'
   }
 
   return lletraIntroduida === lletraEsperada ? 'lletra-correcta' : 'lletra-incorrecta'
@@ -334,7 +328,7 @@ watch(
       debuffState.duration = 0
     }
   },
-  { immediate: true }
+  { immediate: true },
 )
 
 props.socket.on('spectatorGameView', (gameStats) => {
@@ -371,7 +365,7 @@ props.socket.on('debuffReceived', ({ type, duration }) => {
 })
 
 props.socket.on('debuffEnded', () => {
-  showNotification('L\'efecte del debuff ha acabat.')
+  showNotification("L'efecte del debuff ha acabat.")
   debuffState.isActive = false
   debuffState.type = null
   debuffState.duration = 0
@@ -392,31 +386,23 @@ props.socket.on('tsunamiHit', () => {
 })
 </script>
 
-
 <style scoped>
 /* --- NOTIFICACIONS --- */
 .notification-overlay {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: rgba(0, 0, 0, 0.7);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 20;
-  pointer-events: none;
+  position: fixed;
+  top: 4rem;
+  left: 2rem;
 }
 .notification-content {
   background-color: #ffc107;
   color: #333;
   padding: 20px 40px;
-  border-radius: 10px;
-  font-size: 2rem;
+  font-size: 1.1rem;
   font-weight: bold;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
   animation: fadeInOut 3s ease-in-out;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 15px rgba(255, 193, 7, 0.4);
 }
 @keyframes fadeInOut {
   0%,
@@ -433,6 +419,7 @@ props.socket.on('tsunamiHit', () => {
 
 /* --- ESTILS GENERALS --- */
 .paraules {
+  color: rgb(255, 255, 255);
   font-size: 1.5rem;
   line-height: 2;
   word-spacing: 0.5em;
@@ -445,7 +432,6 @@ props.socket.on('tsunamiHit', () => {
 }
 
 .paraula.actual {
-  background-color: #f0f0f0;
   border-radius: 4px;
 }
 
@@ -545,5 +531,9 @@ props.socket.on('tsunamiHit', () => {
 #game-engine.Congelar .lletra-actual {
   background-color: transparent;
   color: inherit;
+}
+
+.negro {
+  color: white;
 }
 </style>

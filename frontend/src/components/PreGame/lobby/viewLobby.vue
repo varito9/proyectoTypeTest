@@ -1,14 +1,16 @@
 <template>
-  <p>
-    Bienvenido {{ jugadorClient.name }}. Tienes el rol de **{{ jugadorClient.role }}** en la sala.
-  </p>
+  <div class="main-content">
+    <p class="welcome-text">
+      Bienvenido {{ jugadorClient.name }}. Tienes el rol de
+      <strong>{{ jugadorClient.role }}</strong> en la sala.
+    </p>
 
-  <div v-if="accessCodeToDisplay" class="access-code-box">
-    Sala Privada 🔒 | Código de Acceso:
-    <strong>{{ accessCodeToDisplay }}</strong>
-    <p>Comparte este código para que otros se unan.</p>
-  </div>
-  <div>
+    <div v-if="accessCodeToDisplay" class="access-code-box">
+      Sala Privada 🔒 | Código de Acceso:
+      <strong>{{ accessCodeToDisplay }}</strong>
+      <p>Comparte este código para que otros se unan.</p>
+    </div>
+
     <playerList
       :socket-c="socket"
       :llista-jug="llistaJugadors"
@@ -16,12 +18,21 @@
       :jugador="jugadorClient"
       :room-name="roomName"
     />
+  </div>
+  <div class="top-right-buttons">
+    <button v-if="isAdmin" @click="changeTime" class="btn badget">
+      Temps: {{ tempsEstablert }}
+    </button>
+    <button @click="leaveRoom" class="btn salir">Salir de la Sala</button>
+  </div>
 
-    <button v-if="isAdmin" @click="changeTime">Temps: {{ tempsEstablert }}</button>
-    <button v-if="isAdmin" @click="startGame">Comenzar</button>
+  <div class="action-bar">
+    <button class="comenzar" v-if="isAdmin" :class="['btn', 'btn-start']" @click="startGame">
+      Comenzar
+    </button>
     <button
       v-if="!isAdmin"
-      :class="imReady ? 'ready' : 'notReady'"
+      :class="['btn', imReady ? 'ready' : 'notReady']"
       @click="toggleReady(jugadorClient.id)"
     >
       {{ imReady ? 'Observar' : 'Jugar' }}
@@ -37,6 +48,7 @@ const props = defineProps(['socketC', 'llistaJug', 'jugador', 'roomName', 'roomS
 const socket = computed(() => props.socketC)
 const llistaJugadors = computed(() => props.llistaJug)
 const jugadorClient = computed(() => props.jugador || {})
+const emit = defineEmits(['leave'])
 
 // Aquest valor ara es llegeix de les props que venen del servidor
 const tempsEstablert = computed(() => {
@@ -115,23 +127,114 @@ function toggleReady(id) {
     console.error('No se pudo cambiar estado: Socket no conectado.')
   }
 }
+
+function leaveRoom() {
+  emit('leave')
+}
 </script>
 
 <style scoped>
-/* Estilos para el botón de comenzar */
-.disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
+.fondo {
+  /* Layout principal */
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  background: linear-gradient(to bottom, #1e1b2e 32%, #0058d1 100%);
+  border-radius: 20px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+
+  font-family: 'Poppins', sans-serif;
+  color: #f0f0f0;
 }
 
-/* Estilos para la caja del código de acceso */
-.access-code-box {
-  margin: 20px auto;
-  padding: 15px;
-  border: 2px dashed green;
-  background-color: #e6ffe6;
-  border-radius: 5px;
+/* Contenedor de la info y lista de jugadores */
+.main-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  gap: 1.5rem; /* Espacio entre los elementos de arriba */
+}
+
+.welcome-text {
+  font-size: 1.2rem;
   text-align: center;
-  max-width: 400px;
+  margin: 0;
+}
+.welcome-text strong {
+  color: #58a6ff; /* Un azul más brillante */
+  text-transform: capitalize;
+}
+
+/* Ajusta el componente de la lista para que ocupe el espacio */
+
+/* --- BARRA DE ACCIONES --- */
+
+.action-bar {
+  display: flex;
+  flex-wrap: wrap; /* Para que se vea bien en pantallas pequeñas */
+  justify-content: center;
+  align-items: center;
+  gap: 1rem; /* Espacio entre botones */
+  width: 100%;
+  padding-top: 1rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Estilo base de todos los botones */
+.btn {
+  padding: 0.75rem 1.5rem;
+  font-family: 'Poppins', sans-serif;
+  font-size: 1rem;
+  font-weight: 500;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+  color: white;
+}
+
+.btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+}
+
+.top-right-buttons {
+  position: fixed; /* se mantiene visible al hacer scroll */
+  top: 4rem;
+  right: 2rem;
+  display: flex;
+  gap: 3rem;
+}
+
+.badget {
+  background: linear-gradient(to right, #2c2b53 0%, #f58b00 100%);
+  border-radius: 100px;
+  padding: 8px 20px;
+}
+
+.comenzar {
+  background: linear-gradient(to right, #8d087b 0%, #000000 100%);
+  border-radius: 100px;
+  padding: 8px 20px;
+}
+.salir {
+  background: linear-gradient(to right, #ff0202 0%, hsl(337, 100%, 71%) 100%);
+  border-radius: 100px;
+  padding: 8px 20px;
+}
+
+.ready {
+  background: linear-gradient(to right, #360505 0%, hsl(337, 100%, 71%) 100%);
+  border-radius: 100px;
+  padding: 8px 20px;
+}
+
+.notReady {
+  background: linear-gradient(to right, #8d087b 0%, #000000 100%);
+  border-radius: 100px;
+  padding: 8px 20px;
 }
 </style>
