@@ -16,10 +16,10 @@
   </div>
   <div class="top-right-buttons">
     <button v-if="isAdmin" @click="changeTime" class="btn btn-time">
-      <span class="btn-time-label">Modificar el temps de la partida</span>
+      <span class="btn-time-label">Durada del Ritual</span>
       <span class="btn-time-value">{{ tempsEstablert }}s</span>
     </button>
-    <button @click="leaveRoom" class="btn salir">Salir de la Sala</button>
+    <button @click="leaveRoom" class="btn salir">Trencar el Vincle</button>
   </div>
 
   <div class="action-bar">
