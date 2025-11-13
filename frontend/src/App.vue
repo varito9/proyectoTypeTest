@@ -752,6 +752,10 @@ hr {
   align-self: center;
 }
 
+.actions-container .badge {
+  background: none;
+}
+
 .action-card {
   flex: 1; /* Cada tarjeta ocupa 50% */
   display: flex;

@@ -393,6 +393,9 @@ io.on("connection", (socket) => {
       if (!room.spectatorIds.includes(player.id)) {
         room.spectatorIds.push(player.id);
       }
+
+      //emitim al jugador que s'uneix quan la partida esta empezada
+      io.to(player.socketId).emit("spectatorGameView", room.gameStats);
     }
 
     player.isReady = true;
