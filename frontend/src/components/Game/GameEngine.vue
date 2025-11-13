@@ -29,9 +29,7 @@
             completada: paraula.estat === 'completada',
             activa: wordIndex === estatDelJoc.indexParaulaActiva,
             'powerup-word':
-              powerUpState.ready &&
-              !powerUpState.used &&
-              powerUpState.wordIndex === wordIndex,
+              powerUpState.ready && !powerUpState.used && powerUpState.wordIndex === wordIndex,
           }"
         >
           <template v-if="wordIndex === estatDelJoc.indexParaulaActiva && paraula.text">
@@ -50,8 +48,7 @@
         </span>
       </div>
 
-      <div v-if="estatDelJoc.paraules.length > 0 && !acabada">
-        </div>
+      <div v-if="estatDelJoc.paraules.length > 0 && !acabada"></div>
 
       <div v-else-if="acabada">🎉 Has completat el conjur! Esperant la resta de jugadors... 🎉</div>
 
@@ -148,14 +145,6 @@ const idJugadorObservat = ref(null)
 const darrersGameStats = ref([])
 const jugadorsReals = ref([])
 const notification = ref('')
-
-// 🧠 PROPIETATS COMPUTADES
-const paraulaActual = computed(() => {
-  if (acabada.value || !estatDelJoc.paraules.length) {
-    return null
-  }
-  return estatDelJoc.paraules[estatDelJoc.indexParaulaActiva]
-})
 
 // 📢 NOTIFICACIONS
 function showNotification(message, duration = 3000) {
@@ -510,6 +499,7 @@ props.socket.on('tsunamiHit', () => {
 .mage-info {
   background-color: #f4f0ff;
   border: 1px solid #dcd1ff;
+  color: #000000;
   border-radius: 8px;
   padding: 10px 15px;
   margin-bottom: 20px;

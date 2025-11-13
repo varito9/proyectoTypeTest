@@ -178,33 +178,24 @@ function assignNewAdmin(room) {
 
 // Funció per crear rooms
 function createRoom(roomName, hostPlayer, isPrivate = false) {
-  
-  const isRoom = findRoom(roomName);
+  const room = {
+    name: roomName,
+    beingPlayed: false,
+    config: { language: "cat", time: 60 },
+    players: [hostPlayer],
+    timer: null,
+    isPrivate: isPrivate,
+    accessCode: isPrivate ? randomUUID().substring(0, 6).toUpperCase() : null, // Código de 6 caracteres
 
-  if (!isRoom){
-    const room = {
-      name: roomName,
-      beingPlayed: false,
-      config: { language: "cat", time: 60 },
-      players: [hostPlayer],
-      timer: null,
-      isPrivate: isPrivate,
-      accessCode: isPrivate ? randomUUID().substring(0, 6).toUpperCase() : null, // Código de 6 caracteres
-
-      // --- NUEVAS PROPIEDADES ---
-      gameStats: [], // Para guardar el progreso de cada jugador
-      spectatorIds: [], // Para saber a quién enviar los datos
-      spellText: [], // 🔑 Guardaremos el texto (array de líneas) del conjuro
-      // -------------------------
-    };
-    rooms.push(room);
-    broadcastRoomList();
-    return room;
-  } else {
-    return 0;
-  }
-
-  
+    // --- NUEVAS PROPIEDADES ---
+    gameStats: [], // Para guardar el progreso de cada jugador
+    spectatorIds: [], // Para saber a quién enviar los datos
+    spellText: [], // 🔑 Guardaremos el texto (array de líneas) del conjuro
+    // -------------------------
+  };
+  rooms.push(room);
+  broadcastRoomList();
+  return room;
 }
 
 // Trobar la Room per el seu nom
@@ -351,17 +342,12 @@ io.on("connection", (socket) => {
     player.role = "admin";
     const room = createRoom(roomName, player, isPrivate);
 
-    if (room != 0){
-      socket.join(roomName);
-      broadcastRoomState(roomName);
-      socket.emit("roomCreated", { roomName, isPrivate });
+    socket.join(roomName);
+    broadcastRoomState(roomName);
 
-      console.log(
-        `${player.name} creó la sala ${roomName} (Privada: ${isPrivate})`
-      );
-    } else {
-      socket.emit('roomAlreadyCreated')
-    }   
+    console.log(
+      `${player.name} creó la sala ${roomName} (Privada: ${isPrivate})`
+    );
   });
 
   // Listener para unirse a sala (por nombre o código)
