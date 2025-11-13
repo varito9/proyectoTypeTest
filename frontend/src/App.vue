@@ -270,7 +270,6 @@ function tryConn() {
   //expulsar al jugador i notificar-lo
   socket.on('kicked', () => {
     showNotification("Has sigut expulsat per l'admin", 'error', 5000)
-    socket.disconnect()
     resetToRoomList()
   })
 

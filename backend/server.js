@@ -666,7 +666,7 @@ io.on("connection", (socket) => {
     if (!player.powerUpEarned) {
       player.correctWordsInARow++;
 
-      if (player.correctWordsInARow === 2) {
+      if (player.correctWordsInARow === 1) {
         player.powerUpEarned = true;
         io.to(player.socketId).emit("powerUpReady", player.mage);
       }
@@ -729,6 +729,11 @@ io.on("connection", (socket) => {
       duration: durationInSeconds * 1000,
     });
 
+    /* DESCOMENTAR DESPUES
+    //PowerUps Ilimitats
+    attacker.powerUpEarned = false;
+    attacker.correctWordsInARow = 0;
+*/
     // Avisar a l'atacant que el seu power-up s'ha utilitzat correctament
     io.to(attacker.socketId).emit("powerUpUsed");
   });

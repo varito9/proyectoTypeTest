@@ -63,6 +63,23 @@
         autofocus
         :disabled="acabada"
       />
+
+      <!--BORRAR MÁS TARDE-->
+      <button
+        v-if="!isSpectator"
+        @click="usePowerUp"
+        class="test-powerup-button"
+        style="
+          background: #ffc107;
+          color: black;
+          padding: 10px;
+          border: none;
+          cursor: pointer;
+          margin-top: 15px;
+        "
+      >
+        ⚡ USAR PODER (MODO TEST) ⚡
+      </button>
     </div>
 
     <div id="spectator" v-else>
@@ -307,7 +324,9 @@ function playerGameStatus() {
 
 // ⚡ POWER-UP
 function usePowerUp() {
+  /*DESCOMENTAR DESPUES
   if (!powerUpState.ready || powerUpState.used) return
+*/
   // No actualitzem l'estat aquí, esperem la confirmació del servidor
   props.socket.emit('usePowerUp', { roomName: props.roomName, id: props.jugador.id })
 }
@@ -528,23 +547,6 @@ props.socket.on('tsunamiHit', () => {
 .powerup-container {
   margin-bottom: 20px;
 }
-.powerup-button {
-  background-color: #ffc107;
-  color: #333;
-  border: none;
-  padding: 12px 25px;
-  font-size: 1.1rem;
-  font-weight: bold;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  box-shadow: 0 4px 15px rgba(255, 193, 7, 0.4);
-}
-.powerup-button:hover {
-  background-color: #ffca2c;
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(255, 193, 7, 0.5);
-}
 
 .paraula.powerup-word {
   color: #ffc107; /* Texto que resalta */
@@ -569,7 +571,7 @@ props.socket.on('tsunamiHit', () => {
   position: relative;
 }
 .debuff-overlay {
-  position: absolute;
+  position: fixed;
   top: 0;
   left: 0;
   width: 100%;
@@ -578,20 +580,29 @@ props.socket.on('tsunamiHit', () => {
   pointer-events: none;
 }
 #game-engine.Apagon .debuff-overlay {
-  background-color: rgba(0, 0, 0, 0.85);
-  transition: background-color 0.5s ease;
+  animation: apagon-animation 0.7s infinite alternate;
 }
 #game-engine.Flash .debuff-overlay {
-  animation: flash-animation 0.5s infinite alternate;
+  animation: flash-animation 0.4s infinite alternate;
 }
 @keyframes flash-animation {
   from {
-    background-color: rgba(255, 255, 255, 0.8);
+    background-color: rgb(255, 255, 255);
   }
   to {
-    background-color: rgba(255, 255, 255, 0.2);
+    background-color: rgba(250, 250, 250, 0.158);
   }
 }
+
+@keyframes apagon-animation {
+  from {
+    background-color: rgba(0, 0, 0, 0.8);
+  }
+  to {
+    background-color: rgb(0, 0, 0);
+  }
+}
+
 #game-engine.Congelar .paraula.activa {
   background-color: transparent;
   border: 1px dashed #ccc;
