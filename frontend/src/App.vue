@@ -177,6 +177,7 @@ const roomInput = ref('')
 const roomState = ref(null)
 const isPrivateCreation = ref(false)
 const privateCodeInput = ref('')
+const alreadyCreated = ref(false)
 
 const notification = ref({ message: '', type: 'info', visible: false })
 let notificationTimer = null
@@ -263,18 +264,30 @@ function tryConn() {
 
   //expulsar al jugador i notificar-lo
   socket.on('kicked', () => {
-    showNotification('Has sido expulsado por el admin', 'error', 5000)
+    showNotification("Has sigut expulsat per l'admin", 'error', 5000)
     socket.disconnect()
     resetToRoomList()
   })
+
+  socket.on('roomCreated', ({ roomName }) => {
+    currentRoom.value = roomName
+    joinedRoom.value = true
+    vista.value = 'preGame'
+    showNotification(`Sala ${roomName} creada correctamente 🎉`, 3000)
+  })
+
   //Transferim l'admin
   socket.on('youAreNowAdmin', () => {
     jugador.value.role = 'admin'
-    showNotification('¡Eres el nou administrador!', 'info')
+    showNotification('¡Ets el nou administrador!', 'info')
   })
 
   socket.on('lobbyNotification', ({ message, type }) => {
     showNotification(message, type, 4000) // 4 segundos
+  })
+
+  socket.on('roomAlreadyCreated', ({ message }) => {
+    showNotification(message, 4000)
   })
 }
 
@@ -334,9 +347,6 @@ function createRoom() {
     roomName: name,
     isPrivate: isPrivateCreation.value,
   })
-  currentRoom.value = name
-  joinedRoom.value = true
-  vista.value = 'preGame'
 }
 
 function returnToLobby() {
