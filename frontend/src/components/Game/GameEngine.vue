@@ -180,6 +180,16 @@ function validarProgres() {
     const indexActual = inputActual.length - 1
     if (inputActual[indexActual] !== paraulaObjectiu[indexActual]) {
       props.socket.emit('addErrors', { roomName: props.roomName, id: props.jugador.id })
+
+      if (
+        powerUpState.ready &&
+        !powerUpState.used &&
+        estatDelJoc.indexParaulaActiva === powerUpState.wordIndex
+      ) {
+        powerUpState.ready = false
+        powerUpState.wordIndex = null
+        showNotification('¡Has fallat i has perdut el power-up!')
+      }
     }
   }
 
@@ -260,13 +270,14 @@ function caracterEspecial() {
   return chars[Math.floor(Math.random() * chars.length)]
 }
 
+/*
 function getDisplayWord(text) {
   if (!text) return ''
   if (!debuffState.isActive) return text
   if (debuffState.type === 'Ignicio') return text.split('').map(posarTildes).join('')
   if (debuffState.type === 'Enredadera') return text.split('').map(caracterEspecial).join('')
   return text
-}
+}*/
 
 function getDisplayLetter(lletra, index) {
   if (!debuffState.isActive) return lletra
@@ -296,8 +307,6 @@ function usePowerUp() {
   if (!powerUpState.ready || powerUpState.used) return
   // No actualitzem l'estat aquí, esperem la confirmació del servidor
   props.socket.emit('usePowerUp', { roomName: props.roomName, id: props.jugador.id })
-  powerUpState.ready = false
-  powerUpState.used = true
 }
 
 // 👁️ CONTROL D'ESPECTADOR
