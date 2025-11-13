@@ -38,6 +38,7 @@
           class="login-input"
           v-model="jugador.name"
           placeholder="Nom de Mag/a"
+          @keydown.enter="sendNickname(jugador.name)"
         />
 
         <button class="login-button" @click="sendNickname(jugador.name)">
@@ -53,8 +54,8 @@
         <img src="../public/img/Aprendiz_Mago.png" alt="Aprenent de Mag" class="profile-avatar" />
         <div class="profile-info">
           <span class="badge">Perfil de l'Aprenent</span>
-          <span class="profile-label">Nom del Usuari</span>
-          <h3>NomUser</h3>
+          <span class="profile-label">Nom del Mag</span>
+          <h3>{{ jugador.name }}</h3>
           <span class="profile-label">Títol del Mag</span>
           <h5>Aprenent de màgia</h5>
         </div>
@@ -68,21 +69,21 @@
 
       <div class="actions-container">
         <div class="action-card create-room-card">
-          <span class="badge">Crear Sala</span>
-          <input v-model="roomInput" placeholder="Nom de la sala" />
-          <label> <input type="checkbox" v-model="isPrivateCreation" /> Sala Privada </label>
-          <button @click="createRoom">Crear una nova sala</button>
+          <span class="badge">Obrir un Portal</span>
+          <input v-model="roomInput" placeholder="Anomena el teu Portal..." />
+          <label> <input type="checkbox" v-model="isPrivateCreation" />Portal Privat</label>
+          <button @click="createRoom">Activar Portal</button>
         </div>
 
         <div class="action-card join-private-card">
-          <span class="badge">Unir-se a sala Privada</span>
-          <input v-model="privateCodeInput" placeholder="Codi d'Accés (6 dígits)" maxlength="6" />
-          <button @click="joinPrivateRoom">Unir-se a Sala Privada</button>
+          <span class="badge">Unir-se a Portal Privat</span>
+          <input v-model="privateCodeInput" placeholder="Contrasenya Arcana (6 digits)" maxlength="6" />
+          <button @click="joinPrivateRoom">Entrar al Portal Privat</button>
         </div>
       </div>
 
       <div class="rooms-grid-bottom">
-        <h2>Sales disponibles (Públiques)</h2>
+        <h2>Portals Detectats</h2>
         <ul class="room-list">
           <li v-for="room in rooms" :key="room.name" class="room-item">
             <div class="room-info">
@@ -90,7 +91,7 @@
               <span>👥 {{ room.playerCount }} jugadors</span>
               <span v-if="room.beingPlayed" class="status-playing"> | 🎮 En partida</span>
             </div>
-            <button @click="joinExistingRoom(room.name)">Unir-se</button>
+            <button @click="joinExistingRoom(room.name)">Creuar Portal</button>
           </li>
         </ul>
       </div>
@@ -99,7 +100,7 @@
 
   <div class="fondoLobby" v-else-if="vista === 'preGame'">
     <div class="lobby-header">
-      <span class="lobby-label">Sala</span>
+      <span class="lobby-label">Nom portal</span>
       <h1 class="lobby-room-name">{{ currentRoom }}</h1>
       <p class="lobby-subtitle">
         Abraça el teu poder arcà i dirigeix la sala com un autèntic mag. Com més flueixis amb la
