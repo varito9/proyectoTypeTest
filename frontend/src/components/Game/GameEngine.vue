@@ -1,19 +1,16 @@
 <template>
   <div id="game-engine" :class="debuffState.isActive ? debuffState.type : ''">
-    <!-- Notificació -->
     <div v-if="notification" class="notification-overlay">
       <div class="notification-content">
         {{ notification }}
       </div>
     </div>
 
-    <!-- Overlay de debuff -->
     <div
       class="debuff-overlay"
       v-if="debuffState.isActive && (debuffState.type === 'Apagon' || debuffState.type === 'Flash')"
     ></div>
 
-    <!-- Vista del jugador -->
     <div id="player" v-if="!isSpectator">
       <div class="mage-info" v-if="jugador.mage">
         <h3>Ets: {{ jugador.mage.name }}</h3>
@@ -23,31 +20,38 @@
         </p>
       </div>
 
-      <h2 class="negro">Escriu la paraula següent:</h2>
-
-      <div class="paraules" v-if="paraulaActual">
+      <div class="paraules">
         <span
-          class="paraula actual"
+          v-for="(paraula, wordIndex) in estatDelJoc.paraules"
+          :key="wordIndex"
+          class="paraula"
           :class="{
+            completada: paraula.estat === 'completada',
+            activa: wordIndex === estatDelJoc.indexParaulaActiva,
             'powerup-word':
               powerUpState.ready &&
               !powerUpState.used &&
-              powerUpState.wordIndex === estatDelJoc.indexParaulaActiva,
+              powerUpState.wordIndex === wordIndex,
           }"
         >
-          <span
-            v-for="(lletra, letterIndex) in paraulaActual.text.split('')"
-            :key="letterIndex"
-            :class="getClasseLletra(letterIndex)"
-          >
-            {{ getDisplayLetter(lletra, letterIndex) }}
-          </span>
+          <template v-if="wordIndex === estatDelJoc.indexParaulaActiva && paraula.text">
+            <span
+              v-for="(lletra, letterIndex) in paraula.text.split('')"
+              :key="letterIndex"
+              :class="getClasseLletra(letterIndex)"
+            >
+              {{ getDisplayLetter(lletra, letterIndex) }}
+            </span>
+          </template>
+
+          <template v-else>
+            {{ paraula.text }}
+          </template>
         </span>
       </div>
 
-      <div v-else-if="estatDelJoc.paraules.length > 0 && !acabada">
-        Carregant següent paraula...
-      </div>
+      <div v-if="estatDelJoc.paraules.length > 0 && !acabada">
+        </div>
 
       <div v-else-if="acabada">🎉 Has completat el conjur! Esperant la resta de jugadors... 🎉</div>
 
@@ -64,7 +68,6 @@
       />
     </div>
 
-    <!-- Vista d’espectador -->
     <div id="spectator" v-else>
       <button @click="canviarJugadorObservat('anterior')">◀ Enrere</button>
       <div class="paraules">
@@ -442,20 +445,35 @@ props.socket.on('tsunamiHit', () => {
   font-size: 1.5rem;
   line-height: 2;
   word-spacing: 0.5em;
+  /* 🚫 EVITA SELECCIÓ/CÒPIA 🚫 */
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+  /* CONFIGURACIÓ PER A TEXT COMPLET */
+  opacity: 0.5; /* Opacitat base reduïda */
+  transition: opacity 0.3s ease;
 }
 
 .paraula {
   display: inline-block;
   margin-right: 0.5em;
   padding: 2px 4px;
+  opacity: 0.7; /* Opacitat lleugerament més alta que el pare (0.5) */
+  transition: all 0.2s ease;
 }
 
-.paraula.actual {
+/* ESTIL DE LA PARAULA QUE S'ESTÀ ESCRIVINT */
+.paraula.activa {
+  opacity: 1; /* Màxima claredat (100%) */
+  background-color: rgba(255, 255, 255, 0.1); /* Un fons subtil per ressaltar-la */
   border-radius: 4px;
 }
 
+/* ESTIL DE LA PARAULA COMPLETADA */
 .paraula.completada {
   color: #a0a0a0;
+  opacity: 0.4;
 }
 
 .inputJoc {
@@ -479,7 +497,7 @@ props.socket.on('tsunamiHit', () => {
   border-radius: 2px;
 }
 
-/* --- POWER-UPS --- */
+/* --- POWER-UPS I DEBUFFS --- */
 .mage-info {
   background-color: #f4f0ff;
   border: 1px solid #dcd1ff;
@@ -497,7 +515,43 @@ props.socket.on('tsunamiHit', () => {
 .powerup-container {
   margin-bottom: 20px;
 }
-/* --- DEBUFFS --- */
+.powerup-button {
+  background-color: #ffc107;
+  color: #333;
+  border: none;
+  padding: 12px 25px;
+  font-size: 1.1rem;
+  font-weight: bold;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 15px rgba(255, 193, 7, 0.4);
+}
+.powerup-button:hover {
+  background-color: #ffca2c;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(255, 193, 7, 0.5);
+}
+
+.paraula.powerup-word {
+  color: #ffc107; /* Texto que resalta */
+  font-weight: bold;
+  border-radius: 4px;
+  opacity: 1 !important; /* Asegura la visibilitat */
+  animation: pulse-powerup 1s infinite alternate;
+}
+
+@keyframes pulse-powerup {
+  from {
+    transform: scale(1);
+    box-shadow: 0 0 5px rgba(255, 193, 7, 0.5);
+  }
+  to {
+    transform: scale(1.05);
+    box-shadow: 0 0 15px rgba(255, 193, 7, 0.8);
+  }
+}
+
 #game-engine {
   position: relative;
 }
@@ -525,7 +579,7 @@ props.socket.on('tsunamiHit', () => {
     background-color: rgba(255, 255, 255, 0.2);
   }
 }
-#game-engine.Congelar .paraula.actual {
+#game-engine.Congelar .paraula.activa {
   background-color: transparent;
   border: 1px dashed #ccc;
 }
@@ -536,24 +590,5 @@ props.socket.on('tsunamiHit', () => {
 
 .negro {
   color: white;
-}
-
-.paraula.powerup-word {
-  color: #ffc107; /* Texto oscuro para que se lea bien */
-  font-weight: bold;
-  border-radius: 4px;
-  /* Animación para que parpadee y llame la atención */
-  animation: pulse-powerup 1s infinite alternate;
-}
-
-@keyframes pulse-powerup {
-  from {
-    transform: scale(1);
-    box-shadow: 0 0 5px rgba(255, 193, 7, 0.5);
-  }
-  to {
-    transform: scale(1.05);
-    box-shadow: 0 0 15px rgba(255, 193, 7, 0.8);
-  }
 }
 </style>
