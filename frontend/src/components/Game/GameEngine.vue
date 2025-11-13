@@ -149,6 +149,8 @@ const debuffState = reactive({
   isActive: false,
   type: null,
   duration: 0,
+  frozenLetterIndex: null,
+  enredaderaText: null,
 })
 
 const estatJugadorObservat = reactive({
@@ -234,9 +236,13 @@ function validarProgres() {
 
     if (estatDelJoc.indexParaulaActiva < estatDelJoc.paraules.length) {
       paraulaActiva.value = estatDelJoc.paraules[estatDelJoc.indexParaulaActiva]
+      if (debuffState.isActive && debuffState.type === 'Enredadera') {
+        generarEnredaderaText()
+      }
     } else {
       acabada.value = true
       paraulaActiva.value = null
+      debuffState.enredaderaText = null
     }
   }
 
@@ -245,6 +251,17 @@ function validarProgres() {
 
 function getClasseLletra(indexLletra) {
   if (!paraulaActiva.value) return 'lletra-noArribada'
+
+  if (debuffState.isActive && debuffState.type === 'Congelar') {
+    // Comprobamos si la letra actual es la que "congelamos"
+    if (debuffState.frozenLetterIndex !== null && indexLletra === debuffState.frozenLetterIndex) {
+      return 'lletra-actual' // ¡Mostrem el cursor congelst aquí!
+    }
+
+    // Para todas las demás letras, no damos feedback de correcto/incorrecto
+    // ni mostramos el cursor real en movimiento.
+    return 'lletra-noArribada'
+  }
 
   const paraulaObjectiu = getTexteParaulaActiva()
   const lletraEsperada = paraulaObjectiu[indexLletra]
@@ -273,6 +290,10 @@ function getSpectatorClasseLletra(indexLletra, paraulaSencera) {
 // 🧩 UTILITARIS
 function getTexteParaulaActiva() {
   if (!paraulaActiva.value) return ''
+
+  if (debuffState.isActive && debuffState.type === 'Enredadera') {
+    return debuffState.enredaderaText || '' // Retorna el text amb caracter especial desat
+  }
   const textOriginal = paraulaActiva.value.text
   if (debuffState.isActive && debuffState.type === 'Ignicio') {
     return textOriginal.split('').map(posarTildes).join('')
@@ -290,22 +311,27 @@ function caracterEspecial() {
   return chars[Math.floor(Math.random() * chars.length)]
 }
 
-/*
-function getDisplayWord(text) {
-  if (!text) return ''
-  if (!debuffState.isActive) return text
-  if (debuffState.type === 'Ignicio') return text.split('').map(posarTildes).join('')
-  if (debuffState.type === 'Enredadera') return text.split('').map(caracterEspecial).join('')
-  return text
-}*/
+function generarEnredaderaText() {
+  if (!paraulaActiva.value) {
+    debuffState.enredaderaText = null
+    return
+  }
+  const textOriginal = paraulaActiva.value.text
+  // Genera una nova paraula aleatòria i la desa
+  debuffState.enredaderaText = textOriginal
+    .split('')
+    .map(() => caracterEspecial())
+    .join('')
+}
 
 function getDisplayLetter(lletra, index) {
+  if (debuffState.isActive && debuffState.type === 'Enredadera') {
+    // Mostra la lletra de la paraula corrupta desada
+    return debuffState.enredaderaText ? debuffState.enredaderaText[index] : lletra
+  }
+
   if (!debuffState.isActive) return lletra
   if (debuffState.type === 'Ignicio') return posarTildes(lletra)
-  if (debuffState.type === 'Enredadera') {
-    const lletraIntroduida = estatDelJoc.textEntrat[index]
-    return lletraIntroduida === lletra ? lletra : caracterEspecial()
-  }
   return lletra
 }
 
@@ -415,6 +441,13 @@ props.socket.on('debuffReceived', ({ type, duration }) => {
   debuffState.isActive = true
   debuffState.type = type
   debuffState.duration = duration
+  if (type === 'Congelar') {
+    debuffState.frozenLetterIndex = estatDelJoc.textEntrat.length
+  }
+
+  if (type === 'Enredadera') {
+    generarEnredaderaText()
+  }
 })
 
 props.socket.on('debuffEnded', () => {
@@ -422,6 +455,8 @@ props.socket.on('debuffEnded', () => {
   debuffState.isActive = false
   debuffState.type = null
   debuffState.duration = 0
+  debuffState.frozenLetterIndex = null
+  debuffState.enredaderaText = null
 })
 
 props.socket.on('tsunamiHit', () => {
@@ -601,15 +636,6 @@ props.socket.on('tsunamiHit', () => {
   to {
     background-color: rgb(0, 0, 0);
   }
-}
-
-#game-engine.Congelar .paraula.activa {
-  background-color: transparent;
-  border: 1px dashed #ccc;
-}
-#game-engine.Congelar .lletra-actual {
-  background-color: transparent;
-  color: inherit;
 }
 
 .negro {
