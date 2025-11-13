@@ -77,7 +77,11 @@
 
         <div class="action-card join-private-card">
           <span class="badge">Unir-se a Portal Privat</span>
-          <input v-model="privateCodeInput" placeholder="Contrasenya Arcana (6 digits)" maxlength="6" />
+          <input
+            v-model="privateCodeInput"
+            placeholder="Contrasenya Arcana (6 digits)"
+            maxlength="6"
+          />
           <button @click="joinPrivateRoom">Entrar al Portal Privat</button>
         </div>
       </div>
@@ -178,7 +182,6 @@ const roomInput = ref('')
 const roomState = ref(null)
 const isPrivateCreation = ref(false)
 const privateCodeInput = ref('')
-const alreadyCreated = ref(false)
 
 const notification = ref({ message: '', type: 'info', visible: false })
 let notificationTimer = null
