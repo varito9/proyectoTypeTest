@@ -463,6 +463,9 @@ hr {
   padding: 28px;
   box-shadow: 0 20px 48px rgba(0, 0, 0, 0.35);
   overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
 }
 
 .game-sidebar {
