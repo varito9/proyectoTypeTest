@@ -50,7 +50,7 @@
 
       <div v-if="estatDelJoc.paraules.length > 0 && !acabada"></div>
 
-      <div v-else-if="acabada">🎉 Has completat el conjur! Esperant la resta de jugadors... 🎉</div>
+      <div v-else-if="acabada">Has completat el conjur! Esperant la resta de jugadors...</div>
 
       <div v-else>Carregant conjur...</div>
 

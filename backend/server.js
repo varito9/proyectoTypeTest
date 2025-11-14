@@ -60,13 +60,13 @@ const mageDefinitions = [
     name: "Mag de Foc",
     category: "foc", // 🔑 Coincide con tu ejemplo 'foc'
     powerUp: "Ignicio",
-    description: "Posa tilde a totes les lletres",
+    description: "Posa accent a totes les lletres",
   },
   {
     name: "Mag de Gel",
     category: "gel", // 🔑 CORRECCIÓN: Coincide con 'gel' en la BDD
     powerUp: "Congelar",
-    description: "Congela l'input no saps en quina palabra et trobes",
+    description: "Congela l'input, no saps en quina palabra et trobes",
   },
   {
     name: "Mag d'Aigua",
@@ -85,7 +85,7 @@ const mageDefinitions = [
     name: "Mag de Llum",
     category: "llum", // 🔑 CORRECCIÓN: Coincide con 'llum' en la BDD
     powerUp: "Flash",
-    description: "Ilumina la pantalla de forma intermitent",
+    description: "Il·lumina la pantalla de forma intermitent",
   },
   {
     name: "Mag de Jungla",
@@ -341,9 +341,9 @@ io.on("connection", (socket) => {
   socket.on("createRoom", ({ roomName, isPrivate = false }) => {
     const player = socket.data.player;
     if (!player)
-      return socket.emit("error", { message: "Jugador no registrado." });
+      return socket.emit("error", { message: "Jugador no registrat." });
     if (findRoom(roomName))
-      return socket.emit("error", { message: "La sala ya existe." });
+      return socket.emit("error", { message: "La sala ja existeix." });
 
     player.role = "admin";
     const room = createRoom(roomName, player, isPrivate);
@@ -365,7 +365,7 @@ io.on("connection", (socket) => {
   socket.on("joinRoom", ({ roomName, accessCode }) => {
     const player = socket.data.player;
     if (!player)
-      return socket.emit("error", { message: "Jugador no registrado." });
+      return socket.emit("error", { message: "Jugador no registrat." });
 
     let room;
     const codeToSearch = accessCode ? accessCode.toUpperCase() : null;
@@ -390,13 +390,13 @@ io.on("connection", (socket) => {
     } else {
       if (codeToSearch) {
         return socket.emit("error", {
-          message: "Error en la unión. Esta sala no requiere código.",
+          message: "Error a la unió. Aquesta sala no requiereix codi.",
         });
       }
     }
 
     if (room.players.length >= 6)
-      return socket.emit("error", { message: "La sala está plena" });
+      return socket.emit("error", { message: "La sala està plena" });
 
     if (room.beingPlayed) {
       player.role = "spectator";

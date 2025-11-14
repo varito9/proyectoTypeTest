@@ -6,27 +6,27 @@
     <img
       class="mago mago-fuego"
       src="../public/img/MagoFuego-removebg-preview.png"
-      alt="Mago de Fuego"
+      alt="Mag de foc"
     />
     <img
       class="mago mago-angelical"
       src="../public/img/MagoAngelical-removebg-preview.png"
-      alt="Mago Angelical"
+      alt="Mag Angelical"
     />
     <img
       class="mago mago-obscuro"
       src="../public/img/MagoObscuro-removebg-preview.png"
-      alt="Mago Obscuro"
+      alt="Mag Obscur"
     />
     <img
       class="mago mago-tierra"
       src="../public/img/MagoTierra-removebg-preview.png"
-      alt="Mago de Tierra"
+      alt="Mag de Terra"
     />
 
     <div class="login-container">
       <div class="badge">
-        <span>TYPE RACER ROYALE</span>
+        <span>MAGIC TYPE RACER</span>
       </div>
 
       <h1 class="login-title">Desfés la teva màgia. Inicia sessió i continua la teva aventura.</h1>
@@ -42,7 +42,7 @@
         />
 
         <button class="login-button" @click="sendNickname(jugador.name)">
-          Inicia el teu Viatge
+          Inicia el teu viatge
         </button>
       </div>
     </div>
@@ -53,10 +53,10 @@
       <div class="profile-card">
         <img src="../public/img/Aprendiz_Mago.png" alt="Aprenent de Mag" class="profile-avatar" />
         <div class="profile-info">
-          <span class="badge">Perfil de l'Aprenent</span>
-          <span class="profile-label">Nom del Mag</span>
+          <span class="badge">Perfil de l'aprenent</span>
+          <span class="profile-label">Nom del mag</span>
           <h3>{{ jugador.name }}</h3>
-          <span class="profile-label">Títol del Mag</span>
+          <span class="profile-label">Títol del mag</span>
           <h5>Aprenent de màgia</h5>
         </div>
         <p>
@@ -69,25 +69,25 @@
 
       <div class="actions-container">
         <div class="action-card create-room-card">
-          <span class="badge">Obrir un Portal</span>
-          <input v-model="roomInput" placeholder="Anomena el teu Portal..." />
+          <span class="badge">Obrir un portal</span>
+          <input v-model="roomInput" placeholder="Anomena el teu portal..." />
           <label> <input type="checkbox" v-model="isPrivateCreation" />Portal Privat</label>
-          <button @click="createRoom">Activar Portal</button>
+          <button @click="createRoom">Activar portal</button>
         </div>
 
         <div class="action-card join-private-card">
-          <span class="badge">Unir-se a Portal Privat</span>
+          <span class="badge">Unir-se a portal privat</span>
           <input
             v-model="privateCodeInput"
             placeholder="Contrasenya Arcana (6 digits)"
             maxlength="6"
           />
-          <button @click="joinPrivateRoom">Entrar al Portal Privat</button>
+          <button @click="joinPrivateRoom">Entrar al portal privat</button>
         </div>
       </div>
 
       <div class="rooms-grid-bottom">
-        <h2>Portals Detectats</h2>
+        <h2>Portals detectats</h2>
         <ul class="room-list">
           <li v-for="room in rooms" :key="room.name" class="room-item">
             <div class="room-info">
@@ -95,7 +95,7 @@
               <span>👥 {{ room.playerCount }} jugadors</span>
               <span v-if="room.beingPlayed" class="status-playing"> | 🎮 En partida</span>
             </div>
-            <button @click="joinExistingRoom(room.name)">Creuar Portal</button>
+            <button @click="joinExistingRoom(room.name)">Creuar portal</button>
           </li>
         </ul>
       </div>
@@ -151,8 +151,8 @@
       <RankingComponent :llista-jug="jugadors" />
     </div>
     <div class="botonesEndGame">
-      <button @click="returnToLobby" class="btn-time">Seguir En El Portal</button>
-      <button @click="leaveRoom" class="btn salir">Sortir del Portal</button>
+      <button @click="returnToLobby" class="btn-time">Seguir en el portal</button>
+      <button @click="leaveRoom" class="btn salir">Sortir del portal</button>
     </div>
   </div>
 </template>
@@ -246,13 +246,13 @@ function tryConn() {
     tempsInicial.value = time
     spellText.value = newSpellText || []
     spellCategory.value = category || ''
-    showNotification('¡La partida ha començat', 'success')
+    showNotification('La partida ha començat', 'success')
   })
 
   socket.on('gameFinished', ({ ranking }) => {
     jugadors.value = [...ranking]
     vista.value = 'endGame'
-    showNotification('¡Partida acabada!', 'info')
+    showNotification('Partida acabada!', 'info')
   })
 
   socket.on('error', ({ message }) => {
@@ -278,13 +278,13 @@ function tryConn() {
     currentRoom.value = roomName
     joinedRoom.value = true
     vista.value = 'preGame'
-    showNotification(`Portal ${roomName} activat 🎉`, 'info', 3000)
+    showNotification(`Portal ${roomName} activat`, 'info', 3000)
   })
 
   //Transferim l'admin
   socket.on('youAreNowAdmin', () => {
     jugador.value.role = 'admin'
-    showNotification('¡Ets el nou administrador!', 'info')
+    showNotification('Ets el nou administrador!', 'info')
   })
 
   socket.on('lobbyNotification', ({ message, type }) => {
@@ -320,7 +320,7 @@ function loadRooms() {
 }
 
 function joinExistingRoom(roomName) {
-  if (!socket || !socket.connected) return alert('Socket no conectado. Inténtalo de nuevo.')
+  if (!socket || !socket.connected) return alert('Socket no conectat. Intenta-ho de nou.')
 
   socket.emit('joinRoom', { roomName })
   currentRoom.value = roomName
@@ -329,11 +329,11 @@ function joinExistingRoom(roomName) {
 }
 
 function joinPrivateRoom() {
-  if (!socket || !socket.connected) return alert('Socket no conectado. Inténtalo de nuevo.')
+  if (!socket || !socket.connected) return alert('Socket no conectat. Intenta-ho de nou.')
   const code = privateCodeInput.value.trim().toUpperCase()
 
   if (code.length !== 6) {
-    alert('Por favor, introduce el código de 6 dígitos.')
+    alert('Si us plau, introdueix el codi de 6 dígits.')
     return
   }
 
@@ -344,7 +344,7 @@ function joinPrivateRoom() {
 }
 
 function createRoom() {
-  if (!socket || !socket.connected) return alert('Socket no conectado. Inténtalo de nuevo.')
+  if (!socket || !socket.connected) return alert('Socket no conectat. Intenta-ho de nou.')
   const name = roomInput.value.trim()
   if (!name) return
 
@@ -355,14 +355,14 @@ function createRoom() {
 }
 
 function returnToLobby() {
-  if (!socket || !socket.connected) return alert('Socket no conectado. Recarga la página.')
+  if (!socket || !socket.connected) return alert('Socket no conectat. Torna a carregar la pàgina.')
   socket.emit('playAgain', { roomName: currentRoom.value, id: jugador.value.id })
   vista.value = 'preGame'
   tempsInicial.value = -1
 }
 
 function leaveRoom() {
-  if (!socket || !socket.connected) return alert('Socket no conectado. Recarga la página.')
+  if (!socket || !socket.connected) return alert('Socket no conectat. Torna a carregar la pàgina.')
 
   // Avisamos al servidor que este jugador abandona la sala
   socket.emit('leaveRoom', { roomName: currentRoom.value, id: jugador.value.id })
