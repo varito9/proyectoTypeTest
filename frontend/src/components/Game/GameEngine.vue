@@ -13,8 +13,8 @@
 
     <div id="player" v-if="!isSpectator">
       <div class="mage-info" v-if="jugador.mage">
-        <h3>Ets: {{ jugador.mage.name }}</h3>
-        <p>
+        <h1 class="mage-title">Ets: {{ jugador.mage.name }}</h1>
+        <p class="mage-description">
           <strong>Power-up (2 encert de frases seguit):</strong>
           {{ jugador.mage.powerUp }} - <em>{{ jugador.mage.description }}</em>
         </p>
@@ -523,11 +523,18 @@ props.socket.on('tsunamiHit', () => {
   opacity: 0.4;
 }
 
+#player {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
 .inputJoc {
   font-size: 1.2rem;
   padding: 10px;
   width: 50%;
-  margin-top: 20px;
+  margin-top: auto;
+  margin-bottom: auto;
+  align-self: center;
 }
 
 /* --- ESTILS DE LLETRES --- */
@@ -546,19 +553,18 @@ props.socket.on('tsunamiHit', () => {
 
 /* --- POWER-UPS I DEBUFFS --- */
 .mage-info {
-  background-color: #f4f0ff;
-  border: 1px solid #dcd1ff;
-  color: #000000;
-  border-radius: 8px;
-  padding: 10px 15px;
   margin-bottom: 20px;
 }
-.mage-info h3 {
+.mage-title {
   margin: 0 0 5px 0;
-  color: #6a1b9a;
+  font-size: 4rem;
+  font-weight: 300;
+  color: #f5f0ff;
+  letter-spacing: 0.02em;
 }
-.mage-info p {
+.mage-description {
   margin: 0;
+  color: #ffffff;
 }
 .powerup-container {
   margin-bottom: 20px;
@@ -585,6 +591,9 @@ props.socket.on('tsunamiHit', () => {
 
 #game-engine {
   position: relative;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
 }
 .debuff-overlay {
   position: fixed;
