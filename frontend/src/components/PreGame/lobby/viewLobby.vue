@@ -77,9 +77,9 @@ function changeTime() {
       newTime = 120
       break
     case 120:
-      newTime = 5
+      newTime = 180
       break
-    case 5:
+    case 180:
       newTime = 30
       break
     case 30:
