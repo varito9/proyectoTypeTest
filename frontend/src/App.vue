@@ -145,6 +145,10 @@
     </div>
   </div>
 
+  <div class="fondoLobby" v-else-if="vista === 'bookAnimation'">
+    <BookAnimation :nextView="'game'" @animation-finished="handleAnimationFinished" />
+  </div>
+
   <div v-else-if="vista === 'endGame'" class="fondo">
     <div class="ranking">
       <h2>Partida acabada</h2>
@@ -162,6 +166,7 @@ import { ref } from 'vue'
 import { io } from 'socket.io-client'
 import RankingComponent from './components/RankingComponent.vue'
 import viewLobby from './components/PreGame/lobby/viewLobby.vue'
+import BookAnimation from './components/BookAnimation.vue'
 import GameEngine from './components/Game/GameEngine.vue'
 import TempsRestant from './components/Game/TempsRestant.vue'
 
@@ -243,9 +248,9 @@ function tryConn() {
       jugadors.value = [...ranking]
     }
   })
-  // ESTO CAMBIA LA VISTA A 'game' CUANDO EL SERVIDOR MANDA EL INICIO
+  // ESTO CAMBIA LA VISTA A 'bookAnimation' CUANDO EL SERVIDOR MANDA EL INICIO
   socket.on('gameStarted', ({ time, spellText: newSpellText, category }) => {
-    vista.value = 'game'
+    vista.value = 'bookAnimation'
     tempsInicial.value = time
     spellText.value = newSpellText || []
     spellCategory.value = category || ''
@@ -390,6 +395,10 @@ function resetToRoomList() {
   jugadors.value = []
   roomState.value = null
   loadRooms()
+}
+
+function handleAnimationFinished() {
+  vista.value = 'game'
 }
 </script>
 
