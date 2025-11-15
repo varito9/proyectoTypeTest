@@ -261,7 +261,6 @@ const estatDelJoc = reactive({
 
 const powerUpState = reactive({
   ready: false,
-  used: false,
   name: '',
   wordIndex: null,
 })
@@ -327,11 +326,7 @@ function validarProgres() {
         id: props.jugador.id,
       })
 
-      if (
-        powerUpState.ready &&
-        !powerUpState.used &&
-        estatDelJoc.indexParaulaActiva === powerUpState.wordIndex
-      ) {
+      if (powerUpState.ready && estatDelJoc.indexParaulaActiva === powerUpState.wordIndex) {
         powerUpState.ready = false
         powerUpState.wordIndex = null
         showNotification('¡Has fallat i has perdut el power-up!')
@@ -342,14 +337,8 @@ function validarProgres() {
   textAnterior.value = inputActual
 
   if (inputActual === paraulaObjectiu) {
-    if (
-      powerUpState.ready &&
-      !powerUpState.used &&
-      estatDelJoc.indexParaulaActiva === powerUpState.wordIndex
-    ) {
-      // ¡Era esta! Llama a usePowerUp() automáticamente
+    if (powerUpState.ready && estatDelJoc.indexParaulaActiva === powerUpState.wordIndex) {
       usePowerUp()
-      // El estado se limpiará cuando llegue el evento 'powerUpUsed'
     }
 
     props.socket.emit('addPoints', {
@@ -567,7 +556,6 @@ props.socket.on('powerUpReady', (mage) => {
 props.socket.on('powerUpUsed', () => {
   showNotification(`Has utilitzat el teu poder: ${powerUpState.name}!`)
   powerUpState.ready = false
-  powerUpState.used = true // Actualitzem l'estat al rebre la confirmació
   powerUpState.wordIndex = null
 })
 
@@ -1953,7 +1941,7 @@ props.socket.on('tsunamiHit', () => {
 }
 
 .paraula.powerup-word {
-  color: #ffc107;
+  color: #000000;
   font-weight: bold;
   border-radius: 4px;
   opacity: 1 !important;
@@ -1963,7 +1951,7 @@ props.socket.on('tsunamiHit', () => {
 @keyframes pulse-powerup {
   from {
     transform: scale(1);
-    box-shadow: 0 0 5px rgba(255, 193, 7, 0.5);
+    box-shadow: 0 0 5px rgba(0, 0, 0, 0.5);
   }
   to {
     transform: scale(1.05);

@@ -1,28 +1,43 @@
 <template>
-  <table>
-    <thead>
-      <tr>
-        <th>Posició</th>
-        <th>Jugadors</th>
-        <th>Errors</th>
-        <th>Encerts</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr
-        v-for="(player, index) in llistatJugadors"
-        :key="player.id"
-        :class="getPodiumClass(index)"
-      >
-        <td class="rank-cell">
-          <span>{{ getRankContent(index) }}</span>
-        </td>
-        <td>{{ player.name }}</td>
-        <td>{{ player.errors }}</td>
-        <td>{{ player.points }}</td>
-      </tr>
-    </tbody>
-  </table>
+  <div class="ranking-container">
+    <!-- 2. Contenidor de partícules màgiques -->
+    <div class="particles">
+      <span
+        v-for="(p, i) in particles"
+        :key="i"
+        class="particle"
+        :style="{
+          left: `${p.left}%`,
+          width: `${p.size}px`,
+          height: `${p.size}px`,
+          backgroundColor: p.color,
+          boxShadow: `0 0 8px ${p.color}aa`,
+          animationDuration: `${p.duration}s`,
+          animationDelay: `${p.delay}s`,
+        }"
+      ></span>
+    </div>
+    <table>
+      <thead>
+        <tr>
+          <th>Posició</th>
+          <th>Jugadors</th>
+          <th>Errors</th>
+          <th>Encerts</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr v-for="(player, index) in llistatJugadors" :key="player.id">
+          <td class="rank-cell">
+            <span>{{ getRankContent(index) }}</span>
+          </td>
+          <td class="rank-cell">{{ player.name }}</td>
+          <td>{{ player.errors }}</td>
+          <td>{{ player.points }}</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
 </template>
 
 <script setup>
@@ -43,51 +58,120 @@ const llistatJugadors = computed(() => {
         if (a.points !== b.points) {
           return b.points - a.points
         }
-        // Si empaten a punts, ordenem per errors (menys és millor)
         return a.errors - b.errors
       })
   )
 })
-const getPodiumClass = (index) => {
-  if (index === 0) return 'podium-first'
-  if (index === 1) return 'podium-second'
-  if (index === 2) return 'podium-third'
-  return 'podium-other' // Per a la resta
-}
 
 const getRankContent = (index) => {
   const pos = index + 1
-  if (pos === 1) return '1' // Or
-  if (pos === 2) return '2' // Plata
-  if (pos === 3) return '3' // Bronze
-  if (pos === 4) return '4' // Bronze
-  if (pos === 5) return '5' // Bronze
-  if (pos === 6) return '6' // Bronze
+  if (pos === 1) return '1'
+  if (pos === 2) return '2'
+  if (pos === 3) return '3'
+  if (pos === 4) return '4'
+  if (pos === 5) return '5'
+  if (pos === 6) return '6'
 
-  return pos // 4, 5, 6...
+  return pos
 }
+
+const particleCount = 40
+const colors = ['#00f2ff', '#ffd700', '#c0c0c0', '#f0f0f0'] //
+
+const particles = Array.from({ length: particleCount }).map(() => ({
+  duration: Math.random() * 8 + 5,
+
+  delay: Math.random() * 7,
+  left: Math.random() * 100,
+  size: Math.random() * 2 + 1,
+  color: colors[Math.floor(Math.random() * colors.length)],
+}))
 </script>
 
 <style>
-/* Per a una sensació més màgica, pots importar una font de Google Fonts
-   com 'Cinzel' o 'MedievalSharp' afegint al teu CSS:
-   @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&display=swap');
-   i després canviar el font-family a 'Cinzel', serif;
-*/
+.ranking-container {
+  border-radius: 2rem;
+  position: relative;
+  overflow: hidden; /* Molt important: retalla les partícules que surten */
+  width: 100%;
+  margin: 2rem auto;
+  background: #ffffff; /* Un fons fosc per sota de la taula */
+
+  /* --- ✨ NOU ESTIL DE VORA LLUMINOSA --- */
+
+  /* Definim el color de la brillantor */
+  --glow-color: #671dc7;
+
+  /* Vora física subtil del mateix color */
+  border: 1px solid rgba(0, 242, 255, 0.5);
+
+  /* Apilem múltiples ombres per crear l'efecte de "resplendor màgica".
+    Comença des de la més propera/intensa fins a la més llunyana/difusa.
+  */
+  box-shadow:
+    /* 1. Resplendor interior subtil */
+    inset 0 0 10px rgba(7, 107, 238, 0.3),
+    0 0 15px var(--glow-color),
+    0 0 30px var(--glow-color),
+    0 0 50px rgba(10, 96, 255, 0.5);
+}
+.particles {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1; /* Darrere de la taula */
+  pointer-events: none; /* No interfereix amb el ratolí */
+}
+.particle {
+  position: absolute;
+  bottom: -10px; /* Comença just a sota */
+  border-radius: 50%;
+  opacity: 0;
+
+  /* Aquest és el nom de l'animació */
+  animation-name: float-up;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+
+  /* La durada i el retard s'apliquen via :style des de JS */
+}
+
+@keyframes float-up {
+  0% {
+    transform: translateY(0);
+    opacity: 0;
+  }
+  10%,
+  90% {
+    /* Apareix i es manté visible la major part del temps */
+    opacity: 0.9;
+  }
+  100% {
+    /* Puja 100% de l'alçada de la pantalla i desapareix */
+    transform: translateY(-100vh);
+    opacity: 0;
+  }
+}
 
 table {
-  background: rgba(14, 10, 25, 0.8);
+  width: 100%;
+  margin: 0;
+  box-shadow: none;
+
+  position: relative;
+  z-index: 2;
+
+  background-color: rgb(23, 3, 39);
   color: #f0f0f0;
-  width: 90%;
-  margin: 2rem auto;
   border-collapse: collapse;
   border-radius: 2rem;
-  box-shadow: 0 0 30px rgba(3, 3, 3, 0.7);
 }
 
 thead tr {
-  background-color: rgba(0, 0, 0, 0.3);
-  border-bottom: 3px solid #ffffff;
+  background-color: rgb(23, 3, 39);
+  border-bottom: 1px solid #ffffff;
 }
 tbody tr:last-child {
   border-bottom: none;
@@ -98,7 +182,6 @@ th {
   text-transform: uppercase;
   letter-spacing: 1.5px;
   color: #ffffffea;
-  text-shadow: 0 0 8px #ffffff;
   text-align: left;
 }
 
@@ -108,7 +191,7 @@ td {
 }
 
 tbody tr {
-  border-bottom: 1px solid rgba(212, 0, 255, 0.2);
+  border-bottom: 1px solid rgba(213, 192, 218, 0.2);
   transition: all 0.2s ease-in-out;
 }
 
@@ -126,37 +209,6 @@ tbody tr:hover {
   vertical-align: middle;
   text-align: center;
   width: 100px; /* Amplada fixa per a la columna de posició */
-}
-
-/* 🥇 OR (Primer lloc) */
-.podium-first {
-  /* Vora daurada brillant */
-  border: none;
-  /* Resplendor daurada + fons subtil */
-  box-shadow:
-    0 0 15px #ffd700,
-    inset 0 0 10px rgba(255, 215, 0, 0.3);
-  background-color: rgba(255, 215, 0, 0.05);
-}
-
-/* 🥈 PLATA (Segon lloc) */
-.podium-second {
-  /* Vora platejada brillant */
-  /* Resplendor platejada + fons subtil */
-  box-shadow:
-    0 0 12px #c0c0c0,
-    inset 0 0 10px rgba(192, 192, 192, 0.3);
-  background-color: rgba(192, 192, 192, 0.05);
-}
-
-/* 🥉 BRONZE (Tercer lloc) */
-.podium-third {
-  /* Vora de bronze brillant */
-  /* Resplendor bronze + fons subtil */
-  box-shadow:
-    0 0 10px #cd7f32,
-    inset 0 0 10px rgba(205, 127, 50, 0.3);
-  background-color: rgba(205, 127, 50, 0.05);
 }
 
 /* --- 7. AJUSTAR 'NTH-CHILD' PERQUÈ COINCIDEIXIN AMB LES NOVES COLUMNES --- */

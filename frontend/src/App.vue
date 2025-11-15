@@ -2,6 +2,12 @@
   <div v-if="notification.visible" :class="['notification', notification.type]">
     <span class="notification-message">{{ notification.message }}</span>
   </div>
+  <div v-if="isPortalActive" class="portal-overlay centrar">
+    <div class="portal-frame">
+      <div class="portal"></div>
+    </div>
+  </div>
+
   <div class="fondo" v-if="!isConnected">
     <!-- Partículas mágicas flotantes -->
     <div class="magic-particles-login">
@@ -66,7 +72,7 @@
       <div class="particle-layer particle-layer-4"></div>
       <div class="particle-layer particle-layer-5"></div>
     </div>
-    
+
     <div class="rooms-page-container">
       <div class="profile-card">
         <div class="profile-avatar-wrapper">
@@ -217,6 +223,7 @@ const roomInput = ref('')
 const roomState = ref(null)
 const isPrivateCreation = ref(false)
 const privateCodeInput = ref('')
+const isPortalActive = ref(false)
 
 const notification = ref({ message: '', type: 'info', visible: false })
 let notificationTimer = null
@@ -249,10 +256,13 @@ function tryConn() {
     rooms.value = list
   })
   socket.on('roomJoined', ({ roomName }) => {
-    currentRoom.value = roomName
-    //si el servidor envia que hem entrar a la sala, cambiem de vista i cambiem el valor de joinedRoom
-    joinedRoom.value = true;
-    vista.value = 'preGame';
+    setTimeout(() => {
+      isPortalActive.value = false // Cierra el portal
+      currentRoom.value = roomName
+      //si el servidor envia que hem entrar a la sala, cambiem de vista i cambiem el valor de joinedRoom
+      joinedRoom.value = true
+      vista.value = 'preGame'
+    }, 3000)
   })
 
   socket.on('updateRoomState', (room) => {
@@ -293,6 +303,7 @@ function tryConn() {
   })
 
   socket.on('error', ({ message }) => {
+    isPortalActive.value = false
     showNotification(message, 'error')
     if (joinedRoom.value) {
       if (currentRoom.value === '' && !roomState.value) {
@@ -311,10 +322,15 @@ function tryConn() {
   })
 
   socket.on('roomCreated', ({ roomName }) => {
-    currentRoom.value = roomName
-    joinedRoom.value = true
-    vista.value = 'preGame'
-    showNotification(`Portal ${roomName} activat`, 'info', 3000)
+    setTimeout(() => {
+      isPortalActive.value = false // Cierra el portal
+
+      // La lógica que tenías para entrar al lobby
+      currentRoom.value = roomName
+      joinedRoom.value = true
+      vista.value = 'preGame'
+      showNotification(`Portal ${roomName} activat`, 'info', 3000)
+    }, 3000) // 5000 ms = 5 segundos
   })
 
   //Transferim l'admin
@@ -328,6 +344,8 @@ function tryConn() {
   })
 
   socket.on('roomAlreadyCreated', ({ message }) => {
+    isPortalActive.value = false
+
     showNotification(message, 4000)
   })
 }
@@ -365,6 +383,7 @@ function loadRooms() {
 function joinExistingRoom(roomName) {
   if (!socket || !socket.connected) return alert('Socket no conectat. Intenta-ho de nou.')
 
+  isPortalActive.value = true
   socket.emit('joinRoom', { roomName })
   currentRoom.value = roomName
 }
@@ -377,6 +396,7 @@ function joinPrivateRoom() {
     showNotification('El codi ha de tenir 6 dígits', 'error')
     return
   }
+  isPortalActive.value = true
 
   socket.emit('joinRoom', { accessCode: code })
   privateCodeInput.value = ''
@@ -394,6 +414,7 @@ function createRoom() {
     showNotification('El nom del portal no pot tenir més de 25 caràcters', 'error')
     return
   }
+  isPortalActive.value = true
   socket.emit('createRoom', {
     roomName: name,
     isPrivate: isPrivateCreation.value,
@@ -504,7 +525,7 @@ hr {
 
 /* Capa 1: Partículas doradas grandes y brillantes */
 .particle-layer-login-1 {
-  background-image: 
+  background-image:
     radial-gradient(8px 8px at 8% 15%, rgba(255, 215, 0, 1), transparent),
     radial-gradient(6px 6px at 25% 45%, rgba(255, 215, 0, 0.9), transparent),
     radial-gradient(10px 10px at 45% 75%, rgba(255, 215, 0, 1), transparent),
@@ -522,7 +543,7 @@ hr {
 
 /* Capa 2: Partículas blancas brillantes medianas */
 .particle-layer-login-2 {
-  background-image: 
+  background-image:
     radial-gradient(5px 5px at 15% 28%, rgba(255, 255, 255, 1), transparent),
     radial-gradient(6px 6px at 55% 68%, rgba(255, 255, 255, 0.95), transparent),
     radial-gradient(4px 4px at 78% 12%, rgba(255, 255, 255, 1), transparent),
@@ -541,7 +562,7 @@ hr {
 
 /* Capa 3: Partículas púrpuras mágicas */
 .particle-layer-login-3 {
-  background-image: 
+  background-image:
     radial-gradient(6px 6px at 32% 38%, rgba(168, 139, 255, 1), transparent),
     radial-gradient(4px 4px at 62% 18%, rgba(168, 139, 255, 0.95), transparent),
     radial-gradient(7px 7px at 12% 58%, rgba(168, 139, 255, 1), transparent),
@@ -560,7 +581,7 @@ hr {
 
 /* Capa 4: Partículas brillantes pequeñas (efecto sparkle intenso) */
 .particle-layer-login-4 {
-  background-image: 
+  background-image:
     radial-gradient(3px 3px at 10% 20%, rgba(255, 255, 255, 1), transparent),
     radial-gradient(3px 3px at 35% 52%, rgba(255, 215, 0, 1), transparent),
     radial-gradient(2px 2px at 60% 32%, rgba(255, 255, 255, 1), transparent),
@@ -574,14 +595,16 @@ hr {
     radial-gradient(2px 2px at 30% 28%, rgba(255, 215, 0, 1), transparent),
     radial-gradient(3px 3px at 80% 58%, rgba(255, 255, 255, 1), transparent);
   background-size: 150% 150%;
-  animation: float-particles-login-4 18s ease-in-out infinite, sparkle-particles-login 3s ease-in-out infinite;
+  animation:
+    float-particles-login-4 18s ease-in-out infinite,
+    sparkle-particles-login 3s ease-in-out infinite;
   animation-delay: -9s, 0s;
   filter: drop-shadow(0 0 2px rgba(255, 255, 255, 1));
 }
 
 /* Capa 5: Partículas doradas pequeñas adicionales */
 .particle-layer-login-5 {
-  background-image: 
+  background-image:
     radial-gradient(4px 4px at 5% 30%, rgba(255, 215, 0, 0.9), transparent),
     radial-gradient(5px 5px at 40% 15%, rgba(255, 215, 0, 1), transparent),
     radial-gradient(3px 3px at 70% 45%, rgba(255, 215, 0, 0.95), transparent),
@@ -600,86 +623,256 @@ hr {
 
 /* Animaciones de flotación para Login */
 @keyframes float-particles-login-1 {
-  0%, 100% {
-    background-position: 0% 0%, 20% 30%, 40% 50%, 60% 70%, 80% 10%, 15% 70%, 85% 15%, 40% 10%, 75% 88%, 18% 92%;
+  0%,
+  100% {
+    background-position:
+      0% 0%,
+      20% 30%,
+      40% 50%,
+      60% 70%,
+      80% 10%,
+      15% 70%,
+      85% 15%,
+      40% 10%,
+      75% 88%,
+      18% 92%;
     transform: translate(0, 0);
   }
   25% {
-    background-position: 10% 10%, 30% 40%, 50% 60%, 70% 80%, 90% 20%, 25% 80%, 95% 25%, 50% 20%, 85% 98%, 28% 102%;
+    background-position:
+      10% 10%,
+      30% 40%,
+      50% 60%,
+      70% 80%,
+      90% 20%,
+      25% 80%,
+      95% 25%,
+      50% 20%,
+      85% 98%,
+      28% 102%;
     transform: translate(8px, -15px);
   }
   50% {
-    background-position: 20% 20%, 40% 50%, 60% 70%, 80% 90%, 100% 30%, 35% 90%, 105% 35%, 60% 30%, 95% 108%, 38% 112%;
+    background-position:
+      20% 20%,
+      40% 50%,
+      60% 70%,
+      80% 90%,
+      100% 30%,
+      35% 90%,
+      105% 35%,
+      60% 30%,
+      95% 108%,
+      38% 112%;
     transform: translate(-8px, -25px);
   }
   75% {
-    background-position: 10% 10%, 30% 40%, 50% 60%, 70% 80%, 90% 20%, 25% 80%, 95% 25%, 50% 20%, 85% 98%, 28% 102%;
+    background-position:
+      10% 10%,
+      30% 40%,
+      50% 60%,
+      70% 80%,
+      90% 20%,
+      25% 80%,
+      95% 25%,
+      50% 20%,
+      85% 98%,
+      28% 102%;
     transform: translate(8px, -15px);
   }
 }
 
 @keyframes float-particles-login-2 {
-  0%, 100% {
-    background-position: 0% 0%, 20% 30%, 40% 50%, 60% 70%, 80% 10%, 25% 90%, 75% 50%, 45% 25%, 38% 95%, 95% 35%;
+  0%,
+  100% {
+    background-position:
+      0% 0%,
+      20% 30%,
+      40% 50%,
+      60% 70%,
+      80% 10%,
+      25% 90%,
+      75% 50%,
+      45% 25%,
+      38% 95%,
+      95% 35%;
     transform: translate(0, 0);
   }
   33% {
-    background-position: -10% 10%, 10% 40%, 30% 60%, 50% 80%, 70% 20%, 15% 100%, 65% 60%, 35% 35%, 28% 105%, 85% 45%;
+    background-position:
+      -10% 10%,
+      10% 40%,
+      30% 60%,
+      50% 80%,
+      70% 20%,
+      15% 100%,
+      65% 60%,
+      35% 35%,
+      28% 105%,
+      85% 45%;
     transform: translate(-12px, 8px);
   }
   66% {
-    background-position: 10% -10%, 30% 20%, 50% 40%, 70% 60%, 90% 0%, 35% 80%, 85% 40%, 55% 15%, 48% 85%, 105% 25%;
+    background-position:
+      10% -10%,
+      30% 20%,
+      50% 40%,
+      70% 60%,
+      90% 0%,
+      35% 80%,
+      85% 40%,
+      55% 15%,
+      48% 85%,
+      105% 25%;
     transform: translate(12px, -8px);
   }
 }
 
 @keyframes float-particles-login-3 {
-  0%, 100% {
-    background-position: 0% 0%, 20% 30%, 40% 50%, 60% 70%, 80% 10%, 15% 60%, 85% 40%, 55% 80%, 25% 15%, 18% 82%;
+  0%,
+  100% {
+    background-position:
+      0% 0%,
+      20% 30%,
+      40% 50%,
+      60% 70%,
+      80% 10%,
+      15% 60%,
+      85% 40%,
+      55% 80%,
+      25% 15%,
+      18% 82%;
     transform: translate(0, 0);
   }
   25% {
-    background-position: 15% 15%, 35% 45%, 55% 65%, 75% 85%, 95% 25%, 30% 75%, 100% 55%, 70% 95%, 40% 30%, 33% 97%;
+    background-position:
+      15% 15%,
+      35% 45%,
+      55% 65%,
+      75% 85%,
+      95% 25%,
+      30% 75%,
+      100% 55%,
+      70% 95%,
+      40% 30%,
+      33% 97%;
     transform: translate(10px, 10px);
   }
   50% {
-    background-position: -15% -15%, 5% 15%, 25% 35%, 45% 55%, 65% 5%, 0% 45%, 70% 25%, 40% 65%, 10% 0%, 3% 67%;
+    background-position:
+      -15% -15%,
+      5% 15%,
+      25% 35%,
+      45% 55%,
+      65% 5%,
+      0% 45%,
+      70% 25%,
+      40% 65%,
+      10% 0%,
+      3% 67%;
     transform: translate(-10px, -10px);
   }
   75% {
-    background-position: 15% 15%, 35% 45%, 55% 65%, 75% 85%, 95% 25%, 30% 75%, 100% 55%, 70% 95%, 40% 30%, 33% 97%;
+    background-position:
+      15% 15%,
+      35% 45%,
+      55% 65%,
+      75% 85%,
+      95% 25%,
+      30% 75%,
+      100% 55%,
+      70% 95%,
+      40% 30%,
+      33% 97%;
     transform: translate(10px, 10px);
   }
 }
 
 @keyframes float-particles-login-4 {
-  0%, 100% {
-    background-position: 0% 0%, 20% 30%, 40% 50%, 60% 70%, 80% 10%, 15% 70%, 85% 15%, 40% 10%, 65% 90%, 18% 5%, 30% 28%, 80% 58%;
+  0%,
+  100% {
+    background-position:
+      0% 0%,
+      20% 30%,
+      40% 50%,
+      60% 70%,
+      80% 10%,
+      15% 70%,
+      85% 15%,
+      40% 10%,
+      65% 90%,
+      18% 5%,
+      30% 28%,
+      80% 58%;
     transform: translate(0, 0);
   }
   50% {
-    background-position: 20% 20%, 40% 50%, 60% 70%, 80% 90%, 100% 30%, 35% 90%, 105% 35%, 60% 30%, 85% 110%, 38% 25%, 50% 48%, 100% 78%;
+    background-position:
+      20% 20%,
+      40% 50%,
+      60% 70%,
+      80% 90%,
+      100% 30%,
+      35% 90%,
+      105% 35%,
+      60% 30%,
+      85% 110%,
+      38% 25%,
+      50% 48%,
+      100% 78%;
     transform: translate(-6px, 6px);
   }
 }
 
 @keyframes float-particles-login-5 {
-  0%, 100% {
-    background-position: 0% 0%, 20% 30%, 40% 50%, 60% 70%, 80% 10%, 15% 70%, 85% 15%, 40% 10%, 60% 10%, 35% 95%;
+  0%,
+  100% {
+    background-position:
+      0% 0%,
+      20% 30%,
+      40% 50%,
+      60% 70%,
+      80% 10%,
+      15% 70%,
+      85% 15%,
+      40% 10%,
+      60% 10%,
+      35% 95%;
     transform: translate(0, 0);
   }
   33% {
-    background-position: 12% 12%, 32% 42%, 52% 62%, 72% 82%, 92% 22%, 27% 82%, 97% 27%, 52% 22%, 72% 22%, 47% 107%;
+    background-position:
+      12% 12%,
+      32% 42%,
+      52% 62%,
+      72% 82%,
+      92% 22%,
+      27% 82%,
+      97% 27%,
+      52% 22%,
+      72% 22%,
+      47% 107%;
     transform: translate(7px, -12px);
   }
   66% {
-    background-position: -12% -12%, 8% 18%, 28% 38%, 48% 58%, 68% -2%, 3% 58%, 73% 3%, 28% -2%, 48% -2%, 23% 83%;
+    background-position:
+      -12% -12%,
+      8% 18%,
+      28% 38%,
+      48% 58%,
+      68% -2%,
+      3% 58%,
+      73% 3%,
+      28% -2%,
+      48% -2%,
+      23% 83%;
     transform: translate(-7px, 12px);
   }
 }
 
 @keyframes sparkle-particles-login {
-  0%, 100% {
+  0%,
+  100% {
     opacity: 0.7;
   }
   50% {
@@ -725,7 +918,7 @@ hr {
 
 /* Capa 1: Partículas doradas grandes y brillantes */
 .particle-layer-lobby-1 {
-  background-image: 
+  background-image:
     radial-gradient(8px 8px at 8% 15%, rgba(255, 215, 0, 1), transparent),
     radial-gradient(6px 6px at 25% 45%, rgba(255, 215, 0, 0.9), transparent),
     radial-gradient(10px 10px at 45% 75%, rgba(255, 215, 0, 1), transparent),
@@ -743,7 +936,7 @@ hr {
 
 /* Capa 2: Partículas blancas brillantes medianas */
 .particle-layer-lobby-2 {
-  background-image: 
+  background-image:
     radial-gradient(5px 5px at 15% 28%, rgba(255, 255, 255, 1), transparent),
     radial-gradient(6px 6px at 55% 68%, rgba(255, 255, 255, 0.95), transparent),
     radial-gradient(4px 4px at 78% 12%, rgba(255, 255, 255, 1), transparent),
@@ -762,7 +955,7 @@ hr {
 
 /* Capa 3: Partículas púrpuras mágicas */
 .particle-layer-lobby-3 {
-  background-image: 
+  background-image:
     radial-gradient(6px 6px at 32% 38%, rgba(168, 139, 255, 1), transparent),
     radial-gradient(4px 4px at 62% 18%, rgba(168, 139, 255, 0.95), transparent),
     radial-gradient(7px 7px at 12% 58%, rgba(168, 139, 255, 1), transparent),
@@ -781,7 +974,7 @@ hr {
 
 /* Capa 4: Partículas brillantes pequeñas (efecto sparkle intenso) */
 .particle-layer-lobby-4 {
-  background-image: 
+  background-image:
     radial-gradient(3px 3px at 10% 20%, rgba(255, 255, 255, 1), transparent),
     radial-gradient(3px 3px at 35% 52%, rgba(255, 215, 0, 1), transparent),
     radial-gradient(2px 2px at 60% 32%, rgba(255, 255, 255, 1), transparent),
@@ -795,14 +988,16 @@ hr {
     radial-gradient(2px 2px at 30% 28%, rgba(255, 215, 0, 1), transparent),
     radial-gradient(3px 3px at 80% 58%, rgba(255, 255, 255, 1), transparent);
   background-size: 150% 150%;
-  animation: float-particles-lobby-4 18s ease-in-out infinite, sparkle-particles-lobby 3s ease-in-out infinite;
+  animation:
+    float-particles-lobby-4 18s ease-in-out infinite,
+    sparkle-particles-lobby 3s ease-in-out infinite;
   animation-delay: -9s, 0s;
   filter: drop-shadow(0 0 2px rgba(255, 255, 255, 1));
 }
 
 /* Capa 5: Partículas doradas pequeñas adicionales */
 .particle-layer-lobby-5 {
-  background-image: 
+  background-image:
     radial-gradient(4px 4px at 5% 30%, rgba(255, 215, 0, 0.9), transparent),
     radial-gradient(5px 5px at 40% 15%, rgba(255, 215, 0, 1), transparent),
     radial-gradient(3px 3px at 70% 45%, rgba(255, 215, 0, 0.95), transparent),
@@ -821,86 +1016,256 @@ hr {
 
 /* Animaciones de flotación para Lobby */
 @keyframes float-particles-lobby-1 {
-  0%, 100% {
-    background-position: 0% 0%, 20% 30%, 40% 50%, 60% 70%, 80% 10%, 15% 70%, 85% 15%, 40% 10%, 75% 88%, 18% 92%;
+  0%,
+  100% {
+    background-position:
+      0% 0%,
+      20% 30%,
+      40% 50%,
+      60% 70%,
+      80% 10%,
+      15% 70%,
+      85% 15%,
+      40% 10%,
+      75% 88%,
+      18% 92%;
     transform: translate(0, 0);
   }
   25% {
-    background-position: 10% 10%, 30% 40%, 50% 60%, 70% 80%, 90% 20%, 25% 80%, 95% 25%, 50% 20%, 85% 98%, 28% 102%;
+    background-position:
+      10% 10%,
+      30% 40%,
+      50% 60%,
+      70% 80%,
+      90% 20%,
+      25% 80%,
+      95% 25%,
+      50% 20%,
+      85% 98%,
+      28% 102%;
     transform: translate(8px, -15px);
   }
   50% {
-    background-position: 20% 20%, 40% 50%, 60% 70%, 80% 90%, 100% 30%, 35% 90%, 105% 35%, 60% 30%, 95% 108%, 38% 112%;
+    background-position:
+      20% 20%,
+      40% 50%,
+      60% 70%,
+      80% 90%,
+      100% 30%,
+      35% 90%,
+      105% 35%,
+      60% 30%,
+      95% 108%,
+      38% 112%;
     transform: translate(-8px, -25px);
   }
   75% {
-    background-position: 10% 10%, 30% 40%, 50% 60%, 70% 80%, 90% 20%, 25% 80%, 95% 25%, 50% 20%, 85% 98%, 28% 102%;
+    background-position:
+      10% 10%,
+      30% 40%,
+      50% 60%,
+      70% 80%,
+      90% 20%,
+      25% 80%,
+      95% 25%,
+      50% 20%,
+      85% 98%,
+      28% 102%;
     transform: translate(8px, -15px);
   }
 }
 
 @keyframes float-particles-lobby-2 {
-  0%, 100% {
-    background-position: 0% 0%, 20% 30%, 40% 50%, 60% 70%, 80% 10%, 25% 90%, 75% 50%, 45% 25%, 38% 95%, 95% 35%;
+  0%,
+  100% {
+    background-position:
+      0% 0%,
+      20% 30%,
+      40% 50%,
+      60% 70%,
+      80% 10%,
+      25% 90%,
+      75% 50%,
+      45% 25%,
+      38% 95%,
+      95% 35%;
     transform: translate(0, 0);
   }
   33% {
-    background-position: -10% 10%, 10% 40%, 30% 60%, 50% 80%, 70% 20%, 15% 100%, 65% 60%, 35% 35%, 28% 105%, 85% 45%;
+    background-position:
+      -10% 10%,
+      10% 40%,
+      30% 60%,
+      50% 80%,
+      70% 20%,
+      15% 100%,
+      65% 60%,
+      35% 35%,
+      28% 105%,
+      85% 45%;
     transform: translate(-12px, 8px);
   }
   66% {
-    background-position: 10% -10%, 30% 20%, 50% 40%, 70% 60%, 90% 0%, 35% 80%, 85% 40%, 55% 15%, 48% 85%, 105% 25%;
+    background-position:
+      10% -10%,
+      30% 20%,
+      50% 40%,
+      70% 60%,
+      90% 0%,
+      35% 80%,
+      85% 40%,
+      55% 15%,
+      48% 85%,
+      105% 25%;
     transform: translate(12px, -8px);
   }
 }
 
 @keyframes float-particles-lobby-3 {
-  0%, 100% {
-    background-position: 0% 0%, 20% 30%, 40% 50%, 60% 70%, 80% 10%, 15% 60%, 85% 40%, 55% 80%, 25% 15%, 18% 82%;
+  0%,
+  100% {
+    background-position:
+      0% 0%,
+      20% 30%,
+      40% 50%,
+      60% 70%,
+      80% 10%,
+      15% 60%,
+      85% 40%,
+      55% 80%,
+      25% 15%,
+      18% 82%;
     transform: translate(0, 0);
   }
   25% {
-    background-position: 15% 15%, 35% 45%, 55% 65%, 75% 85%, 95% 25%, 30% 75%, 100% 55%, 70% 95%, 40% 30%, 33% 97%;
+    background-position:
+      15% 15%,
+      35% 45%,
+      55% 65%,
+      75% 85%,
+      95% 25%,
+      30% 75%,
+      100% 55%,
+      70% 95%,
+      40% 30%,
+      33% 97%;
     transform: translate(10px, 10px);
   }
   50% {
-    background-position: -15% -15%, 5% 15%, 25% 35%, 45% 55%, 65% 5%, 0% 45%, 70% 25%, 40% 65%, 10% 0%, 3% 67%;
+    background-position:
+      -15% -15%,
+      5% 15%,
+      25% 35%,
+      45% 55%,
+      65% 5%,
+      0% 45%,
+      70% 25%,
+      40% 65%,
+      10% 0%,
+      3% 67%;
     transform: translate(-10px, -10px);
   }
   75% {
-    background-position: 15% 15%, 35% 45%, 55% 65%, 75% 85%, 95% 25%, 30% 75%, 100% 55%, 70% 95%, 40% 30%, 33% 97%;
+    background-position:
+      15% 15%,
+      35% 45%,
+      55% 65%,
+      75% 85%,
+      95% 25%,
+      30% 75%,
+      100% 55%,
+      70% 95%,
+      40% 30%,
+      33% 97%;
     transform: translate(10px, 10px);
   }
 }
 
 @keyframes float-particles-lobby-4 {
-  0%, 100% {
-    background-position: 0% 0%, 20% 30%, 40% 50%, 60% 70%, 80% 10%, 15% 70%, 85% 15%, 40% 10%, 65% 90%, 18% 5%, 30% 28%, 80% 58%;
+  0%,
+  100% {
+    background-position:
+      0% 0%,
+      20% 30%,
+      40% 50%,
+      60% 70%,
+      80% 10%,
+      15% 70%,
+      85% 15%,
+      40% 10%,
+      65% 90%,
+      18% 5%,
+      30% 28%,
+      80% 58%;
     transform: translate(0, 0);
   }
   50% {
-    background-position: 20% 20%, 40% 50%, 60% 70%, 80% 90%, 100% 30%, 35% 90%, 105% 35%, 60% 30%, 85% 110%, 38% 25%, 50% 48%, 100% 78%;
+    background-position:
+      20% 20%,
+      40% 50%,
+      60% 70%,
+      80% 90%,
+      100% 30%,
+      35% 90%,
+      105% 35%,
+      60% 30%,
+      85% 110%,
+      38% 25%,
+      50% 48%,
+      100% 78%;
     transform: translate(-6px, 6px);
   }
 }
 
 @keyframes float-particles-lobby-5 {
-  0%, 100% {
-    background-position: 0% 0%, 20% 30%, 40% 50%, 60% 70%, 80% 10%, 15% 70%, 85% 15%, 40% 10%, 60% 10%, 35% 95%;
+  0%,
+  100% {
+    background-position:
+      0% 0%,
+      20% 30%,
+      40% 50%,
+      60% 70%,
+      80% 10%,
+      15% 70%,
+      85% 15%,
+      40% 10%,
+      60% 10%,
+      35% 95%;
     transform: translate(0, 0);
   }
   33% {
-    background-position: 12% 12%, 32% 42%, 52% 62%, 72% 82%, 92% 22%, 27% 82%, 97% 27%, 52% 22%, 72% 22%, 47% 107%;
+    background-position:
+      12% 12%,
+      32% 42%,
+      52% 62%,
+      72% 82%,
+      92% 22%,
+      27% 82%,
+      97% 27%,
+      52% 22%,
+      72% 22%,
+      47% 107%;
     transform: translate(7px, -12px);
   }
   66% {
-    background-position: -12% -12%, 8% 18%, 28% 38%, 48% 58%, 68% -2%, 3% 58%, 73% 3%, 28% -2%, 48% -2%, 23% 83%;
+    background-position:
+      -12% -12%,
+      8% 18%,
+      28% 38%,
+      48% 58%,
+      68% -2%,
+      3% 58%,
+      73% 3%,
+      28% -2%,
+      48% -2%,
+      23% 83%;
     transform: translate(-7px, 12px);
   }
 }
 
 @keyframes sparkle-particles-lobby {
-  0%, 100% {
+  0%,
+  100% {
     opacity: 0.7;
   }
   50% {
@@ -1105,7 +1470,7 @@ hr {
 
 /* Capa 1: Partículas doradas grandes y brillantes */
 .particle-layer-1 {
-  background-image: 
+  background-image:
     radial-gradient(8px 8px at 8% 15%, rgba(255, 215, 0, 1), transparent),
     radial-gradient(6px 6px at 25% 45%, rgba(255, 215, 0, 0.9), transparent),
     radial-gradient(10px 10px at 45% 75%, rgba(255, 215, 0, 1), transparent),
@@ -1123,7 +1488,7 @@ hr {
 
 /* Capa 2: Partículas blancas brillantes medianas */
 .particle-layer-2 {
-  background-image: 
+  background-image:
     radial-gradient(5px 5px at 15% 28%, rgba(255, 255, 255, 1), transparent),
     radial-gradient(6px 6px at 55% 68%, rgba(255, 255, 255, 0.95), transparent),
     radial-gradient(4px 4px at 78% 12%, rgba(255, 255, 255, 1), transparent),
@@ -1142,7 +1507,7 @@ hr {
 
 /* Capa 3: Partículas púrpuras mágicas */
 .particle-layer-3 {
-  background-image: 
+  background-image:
     radial-gradient(6px 6px at 32% 38%, rgba(168, 139, 255, 1), transparent),
     radial-gradient(4px 4px at 62% 18%, rgba(168, 139, 255, 0.95), transparent),
     radial-gradient(7px 7px at 12% 58%, rgba(168, 139, 255, 1), transparent),
@@ -1161,7 +1526,7 @@ hr {
 
 /* Capa 4: Partículas brillantes pequeñas (efecto sparkle intenso) */
 .particle-layer-4 {
-  background-image: 
+  background-image:
     radial-gradient(3px 3px at 10% 20%, rgba(255, 255, 255, 1), transparent),
     radial-gradient(3px 3px at 35% 52%, rgba(255, 215, 0, 1), transparent),
     radial-gradient(2px 2px at 60% 32%, rgba(255, 255, 255, 1), transparent),
@@ -1175,14 +1540,16 @@ hr {
     radial-gradient(2px 2px at 30% 28%, rgba(255, 215, 0, 1), transparent),
     radial-gradient(3px 3px at 80% 58%, rgba(255, 255, 255, 1), transparent);
   background-size: 150% 150%;
-  animation: float-particles-4 18s ease-in-out infinite, sparkle-particles 3s ease-in-out infinite;
+  animation:
+    float-particles-4 18s ease-in-out infinite,
+    sparkle-particles 3s ease-in-out infinite;
   animation-delay: -9s, 0s;
   filter: drop-shadow(0 0 2px rgba(255, 255, 255, 1));
 }
 
 /* Capa 5: Partículas doradas pequeñas adicionales */
 .particle-layer-5 {
-  background-image: 
+  background-image:
     radial-gradient(4px 4px at 5% 30%, rgba(255, 215, 0, 0.9), transparent),
     radial-gradient(5px 5px at 40% 15%, rgba(255, 215, 0, 1), transparent),
     radial-gradient(3px 3px at 70% 45%, rgba(255, 215, 0, 0.95), transparent),
@@ -1201,86 +1568,256 @@ hr {
 
 /* Animaciones de flotación */
 @keyframes float-particles-1 {
-  0%, 100% {
-    background-position: 0% 0%, 20% 30%, 40% 50%, 60% 70%, 80% 10%, 15% 70%, 85% 15%, 40% 10%, 75% 88%, 18% 92%;
+  0%,
+  100% {
+    background-position:
+      0% 0%,
+      20% 30%,
+      40% 50%,
+      60% 70%,
+      80% 10%,
+      15% 70%,
+      85% 15%,
+      40% 10%,
+      75% 88%,
+      18% 92%;
     transform: translate(0, 0);
   }
   25% {
-    background-position: 10% 10%, 30% 40%, 50% 60%, 70% 80%, 90% 20%, 25% 80%, 95% 25%, 50% 20%, 85% 98%, 28% 102%;
+    background-position:
+      10% 10%,
+      30% 40%,
+      50% 60%,
+      70% 80%,
+      90% 20%,
+      25% 80%,
+      95% 25%,
+      50% 20%,
+      85% 98%,
+      28% 102%;
     transform: translate(8px, -15px);
   }
   50% {
-    background-position: 20% 20%, 40% 50%, 60% 70%, 80% 90%, 100% 30%, 35% 90%, 105% 35%, 60% 30%, 95% 108%, 38% 112%;
+    background-position:
+      20% 20%,
+      40% 50%,
+      60% 70%,
+      80% 90%,
+      100% 30%,
+      35% 90%,
+      105% 35%,
+      60% 30%,
+      95% 108%,
+      38% 112%;
     transform: translate(-8px, -25px);
   }
   75% {
-    background-position: 10% 10%, 30% 40%, 50% 60%, 70% 80%, 90% 20%, 25% 80%, 95% 25%, 50% 20%, 85% 98%, 28% 102%;
+    background-position:
+      10% 10%,
+      30% 40%,
+      50% 60%,
+      70% 80%,
+      90% 20%,
+      25% 80%,
+      95% 25%,
+      50% 20%,
+      85% 98%,
+      28% 102%;
     transform: translate(8px, -15px);
   }
 }
 
 @keyframes float-particles-2 {
-  0%, 100% {
-    background-position: 0% 0%, 20% 30%, 40% 50%, 60% 70%, 80% 10%, 25% 90%, 75% 50%, 45% 25%, 38% 95%, 95% 35%;
+  0%,
+  100% {
+    background-position:
+      0% 0%,
+      20% 30%,
+      40% 50%,
+      60% 70%,
+      80% 10%,
+      25% 90%,
+      75% 50%,
+      45% 25%,
+      38% 95%,
+      95% 35%;
     transform: translate(0, 0);
   }
   33% {
-    background-position: -10% 10%, 10% 40%, 30% 60%, 50% 80%, 70% 20%, 15% 100%, 65% 60%, 35% 35%, 28% 105%, 85% 45%;
+    background-position:
+      -10% 10%,
+      10% 40%,
+      30% 60%,
+      50% 80%,
+      70% 20%,
+      15% 100%,
+      65% 60%,
+      35% 35%,
+      28% 105%,
+      85% 45%;
     transform: translate(-12px, 8px);
   }
   66% {
-    background-position: 10% -10%, 30% 20%, 50% 40%, 70% 60%, 90% 0%, 35% 80%, 85% 40%, 55% 15%, 48% 85%, 105% 25%;
+    background-position:
+      10% -10%,
+      30% 20%,
+      50% 40%,
+      70% 60%,
+      90% 0%,
+      35% 80%,
+      85% 40%,
+      55% 15%,
+      48% 85%,
+      105% 25%;
     transform: translate(12px, -8px);
   }
 }
 
 @keyframes float-particles-3 {
-  0%, 100% {
-    background-position: 0% 0%, 20% 30%, 40% 50%, 60% 70%, 80% 10%, 15% 60%, 85% 40%, 55% 80%, 25% 15%, 18% 82%;
+  0%,
+  100% {
+    background-position:
+      0% 0%,
+      20% 30%,
+      40% 50%,
+      60% 70%,
+      80% 10%,
+      15% 60%,
+      85% 40%,
+      55% 80%,
+      25% 15%,
+      18% 82%;
     transform: translate(0, 0);
   }
   25% {
-    background-position: 15% 15%, 35% 45%, 55% 65%, 75% 85%, 95% 25%, 30% 75%, 100% 55%, 70% 95%, 40% 30%, 33% 97%;
+    background-position:
+      15% 15%,
+      35% 45%,
+      55% 65%,
+      75% 85%,
+      95% 25%,
+      30% 75%,
+      100% 55%,
+      70% 95%,
+      40% 30%,
+      33% 97%;
     transform: translate(10px, 10px);
   }
   50% {
-    background-position: -15% -15%, 5% 15%, 25% 35%, 45% 55%, 65% 5%, 0% 45%, 70% 25%, 40% 65%, 10% 0%, 3% 67%;
+    background-position:
+      -15% -15%,
+      5% 15%,
+      25% 35%,
+      45% 55%,
+      65% 5%,
+      0% 45%,
+      70% 25%,
+      40% 65%,
+      10% 0%,
+      3% 67%;
     transform: translate(-10px, -10px);
   }
   75% {
-    background-position: 15% 15%, 35% 45%, 55% 65%, 75% 85%, 95% 25%, 30% 75%, 100% 55%, 70% 95%, 40% 30%, 33% 97%;
+    background-position:
+      15% 15%,
+      35% 45%,
+      55% 65%,
+      75% 85%,
+      95% 25%,
+      30% 75%,
+      100% 55%,
+      70% 95%,
+      40% 30%,
+      33% 97%;
     transform: translate(10px, 10px);
   }
 }
 
 @keyframes float-particles-4 {
-  0%, 100% {
-    background-position: 0% 0%, 20% 30%, 40% 50%, 60% 70%, 80% 10%, 15% 70%, 85% 15%, 40% 10%, 65% 90%, 18% 5%, 30% 28%, 80% 58%;
+  0%,
+  100% {
+    background-position:
+      0% 0%,
+      20% 30%,
+      40% 50%,
+      60% 70%,
+      80% 10%,
+      15% 70%,
+      85% 15%,
+      40% 10%,
+      65% 90%,
+      18% 5%,
+      30% 28%,
+      80% 58%;
     transform: translate(0, 0);
   }
   50% {
-    background-position: 20% 20%, 40% 50%, 60% 70%, 80% 90%, 100% 30%, 35% 90%, 105% 35%, 60% 30%, 85% 110%, 38% 25%, 50% 48%, 100% 78%;
+    background-position:
+      20% 20%,
+      40% 50%,
+      60% 70%,
+      80% 90%,
+      100% 30%,
+      35% 90%,
+      105% 35%,
+      60% 30%,
+      85% 110%,
+      38% 25%,
+      50% 48%,
+      100% 78%;
     transform: translate(-6px, 6px);
   }
 }
 
 @keyframes float-particles-5 {
-  0%, 100% {
-    background-position: 0% 0%, 20% 30%, 40% 50%, 60% 70%, 80% 10%, 15% 70%, 85% 15%, 40% 10%, 60% 10%, 35% 95%;
+  0%,
+  100% {
+    background-position:
+      0% 0%,
+      20% 30%,
+      40% 50%,
+      60% 70%,
+      80% 10%,
+      15% 70%,
+      85% 15%,
+      40% 10%,
+      60% 10%,
+      35% 95%;
     transform: translate(0, 0);
   }
   33% {
-    background-position: 12% 12%, 32% 42%, 52% 62%, 72% 82%, 92% 22%, 27% 82%, 97% 27%, 52% 22%, 72% 22%, 47% 107%;
+    background-position:
+      12% 12%,
+      32% 42%,
+      52% 62%,
+      72% 82%,
+      92% 22%,
+      27% 82%,
+      97% 27%,
+      52% 22%,
+      72% 22%,
+      47% 107%;
     transform: translate(7px, -12px);
   }
   66% {
-    background-position: -12% -12%, 8% 18%, 28% 38%, 48% 58%, 68% -2%, 3% 58%, 73% 3%, 28% -2%, 48% -2%, 23% 83%;
+    background-position:
+      -12% -12%,
+      8% 18%,
+      28% 38%,
+      48% 58%,
+      68% -2%,
+      3% 58%,
+      73% 3%,
+      28% -2%,
+      48% -2%,
+      23% 83%;
     transform: translate(-7px, 12px);
   }
 }
 
 @keyframes sparkle-particles {
-  0%, 100% {
+  0%,
+  100% {
     opacity: 0.7;
   }
   50% {
@@ -1377,7 +1914,7 @@ hr {
   left: -15px;
   right: -15px;
   bottom: -15px;
-  background: 
+  background:
     radial-gradient(circle, rgba(168, 139, 255, 0.5) 0%, transparent 70%),
     repeating-conic-gradient(
       from 0deg at 50% 50%,
@@ -1400,7 +1937,7 @@ hr {
   transform: translate(-50%, -50%);
   width: 220px;
   height: 220px;
-  background-image: 
+  background-image:
     radial-gradient(3px 3px at 20% 30%, rgba(255, 215, 0, 1), transparent),
     radial-gradient(2px 2px at 60% 70%, rgba(255, 255, 255, 0.9), transparent),
     radial-gradient(2px 2px at 50% 50%, rgba(168, 139, 255, 1), transparent),
@@ -1414,9 +1951,37 @@ hr {
     radial-gradient(1px 1px at 25% 75%, rgba(255, 255, 255, 0.8), transparent),
     radial-gradient(2px 2px at 15% 45%, rgba(168, 139, 255, 0.9), transparent),
     radial-gradient(1px 1px at 85% 65%, rgba(255, 215, 0, 0.8), transparent);
-  background-size: 200% 200%, 150% 150%, 180% 180%, 160% 160%, 170% 170%, 140% 140%, 190% 190%, 130% 130%, 120% 120%, 110% 110%, 100% 100%, 105% 105%, 115% 115%;
-  background-position: 0% 0%, 20% 30%, 40% 50%, 60% 70%, 80% 10%, 30% 60%, 70% 20%, 10% 80%, 50% 90%, 70% 50%, 25% 75%, 15% 45%, 85% 65%;
-  animation: sparkle 3s ease-in-out infinite, float-sparkles 8s ease-in-out infinite;
+  background-size:
+    200% 200%,
+    150% 150%,
+    180% 180%,
+    160% 160%,
+    170% 170%,
+    140% 140%,
+    190% 190%,
+    130% 130%,
+    120% 120%,
+    110% 110%,
+    100% 100%,
+    105% 105%,
+    115% 115%;
+  background-position:
+    0% 0%,
+    20% 30%,
+    40% 50%,
+    60% 70%,
+    80% 10%,
+    30% 60%,
+    70% 20%,
+    10% 80%,
+    50% 90%,
+    70% 50%,
+    25% 75%,
+    15% 45%,
+    85% 65%;
+  animation:
+    sparkle 3s ease-in-out infinite,
+    float-sparkles 8s ease-in-out infinite;
   pointer-events: none;
   z-index: 2;
   border-radius: 50%;
@@ -1432,7 +1997,8 @@ hr {
 }
 
 @keyframes sparkle {
-  0%, 100% {
+  0%,
+  100% {
     opacity: 0.7;
     transform: translate(-50%, -50%) scale(1);
   }
@@ -1443,17 +2009,70 @@ hr {
 }
 
 @keyframes float-sparkles {
-  0%, 100% {
-    background-position: 0% 0%, 20% 30%, 40% 50%, 60% 70%, 80% 10%, 30% 60%, 70% 20%, 10% 80%, 50% 90%, 70% 50%, 25% 75%, 15% 45%, 85% 65%;
+  0%,
+  100% {
+    background-position:
+      0% 0%,
+      20% 30%,
+      40% 50%,
+      60% 70%,
+      80% 10%,
+      30% 60%,
+      70% 20%,
+      10% 80%,
+      50% 90%,
+      70% 50%,
+      25% 75%,
+      15% 45%,
+      85% 65%;
   }
   25% {
-    background-position: 10% 10%, 30% 40%, 50% 60%, 70% 80%, 90% 20%, 40% 70%, 80% 30%, 20% 90%, 60% 100%, 80% 60%, 35% 85%, 25% 55%, 95% 75%;
+    background-position:
+      10% 10%,
+      30% 40%,
+      50% 60%,
+      70% 80%,
+      90% 20%,
+      40% 70%,
+      80% 30%,
+      20% 90%,
+      60% 100%,
+      80% 60%,
+      35% 85%,
+      25% 55%,
+      95% 75%;
   }
   50% {
-    background-position: 20% 20%, 40% 50%, 60% 70%, 80% 90%, 100% 30%, 50% 80%, 90% 40%, 30% 100%, 70% 110%, 90% 70%, 45% 95%, 35% 65%, 105% 85%;
+    background-position:
+      20% 20%,
+      40% 50%,
+      60% 70%,
+      80% 90%,
+      100% 30%,
+      50% 80%,
+      90% 40%,
+      30% 100%,
+      70% 110%,
+      90% 70%,
+      45% 95%,
+      35% 65%,
+      105% 85%;
   }
   75% {
-    background-position: 10% 10%, 30% 40%, 50% 60%, 70% 80%, 90% 20%, 40% 70%, 80% 30%, 20% 90%, 60% 100%, 80% 60%, 35% 85%, 25% 55%, 95% 75%;
+    background-position:
+      10% 10%,
+      30% 40%,
+      50% 60%,
+      70% 80%,
+      90% 20%,
+      40% 70%,
+      80% 30%,
+      20% 90%,
+      60% 100%,
+      80% 60%,
+      35% 85%,
+      25% 55%,
+      95% 75%;
   }
 }
 
@@ -1464,7 +2083,7 @@ hr {
   object-fit: cover;
   border-radius: 50%;
   border: 3px solid rgba(168, 139, 255, 0.7);
-  box-shadow: 
+  box-shadow:
     0 0 30px rgba(168, 139, 255, 0.8),
     0 0 60px rgba(255, 215, 0, 0.5),
     inset 0 0 30px rgba(138, 43, 226, 0.3);
@@ -1474,15 +2093,16 @@ hr {
 }
 
 @keyframes pulse-glow {
-  0%, 100% {
-    box-shadow: 
+  0%,
+  100% {
+    box-shadow:
       0 0 30px rgba(168, 139, 255, 0.8),
       0 0 60px rgba(255, 215, 0, 0.5),
       inset 0 0 30px rgba(138, 43, 226, 0.3);
     border-color: rgba(168, 139, 255, 0.7);
   }
   50% {
-    box-shadow: 
+    box-shadow:
       0 0 45px rgba(168, 139, 255, 1),
       0 0 90px rgba(255, 215, 0, 0.7),
       inset 0 0 45px rgba(138, 43, 226, 0.5);
@@ -1870,17 +2490,72 @@ hr {
 }
 
 .ranking h2 {
-  color: #ffffff; /* Color daurat */
+  color: #ffffff;
   text-align: center;
-  font-size: 2.2rem;
+  font-size: 2.5rem;
   text-transform: uppercase;
   letter-spacing: 2px;
+  margin: 0;
+  margin-bottom: 2rem;
 
-  /* Efecte de resplendor daurat */
+  /* APLIQUEM LA FONT MÀGICA */
+  font-family: 'Cinzel', serif;
+
+  /* EFECTE DE RESPLENDOR MÀGIC (daurat/blanc), no NEON (magenta) 
+    Aquí està el canvi clau que has demanat.
+  */
   text-shadow:
-    0 0 10px #f700ff,
-    0 0 5px #ffd700;
-  margin-top: 0;
-  margin-bottom: 1.5rem;
+    0 0 15px #ffd700,
+    /* Resplendor daurat més potent */ 0 0 8px #ffffff; /* Resplendor blanc subtil per a la nitidesa */
+}
+
+.portal-overlay {
+  position: fixed; /* Ocupa toda la pantalla */
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(10, 0, 20, 0.85); /* Fondo oscuro */
+  backdrop-filter: blur(5px);
+  z-index: 9999; /* Por encima de todo */
+  /* El .centrar se encargará de alinearlo */
+}
+
+.centrar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+@keyframes portal-spin {
+  0% {
+    transform: rotate(359deg);
+  }
+}
+.portal-frame {
+  --portal-color: violet;
+  width: 500px;
+  aspect-ratio: 1;
+  --portal-browserbugfix: perspective(2077px) translateZ(-0.1px);
+  transform: var(--portal-browserbugfix,) scaleX(0.7);
+  filter: contrast(1.75);
+  overflow: hidden;
+}
+.portal,
+.portal::before {
+  position: absolute;
+  inset: 0;
+  animation: portal-spin 7s infinite linear;
+}
+.portal {
+  --portal-img: url(https://i.imgur.com/oNjtnOI.png);
+  --portal-mask: var(--portal-img) top left / 100% 100% no-repeat;
+  -webkit-mask: var(--portal-mask);
+  mask: var(--portal-mask);
+}
+.portal::before {
+  content: '';
+  animation-direction: reverse;
+  background: linear-gradient(black -25%, transparent 50%, white 125%), var(--portal-color);
 }
 </style>

@@ -330,6 +330,7 @@ io.on("connection", (socket) => {
       mage: null,
       powerUpEarned: false,
       correctWordsInARow: 0,
+      madeErrorThisWord: false,
       debuff: { type: null, duration: 0 },
     };
 
@@ -650,7 +651,14 @@ io.on("connection", (socket) => {
     if (!player || player.role === "spectator") return;
 
     if (!player.powerUpEarned) {
-      player.correctWordsInARow++;
+      if (player.madeErrorThisWord) {
+        // El jugador cometió un error, no incrementa la racha
+        player.madeErrorThisWord = false;
+        player.correctWordsInARow = 0;
+      } else {
+        // Palabra perfecta, incrementa la racha
+        player.correctWordsInARow++;
+      }
 
       if (player.correctWordsInARow === 1) {
         player.powerUpEarned = true;
@@ -671,6 +679,7 @@ io.on("connection", (socket) => {
 
     player.errors++;
     player.correctWordsInARow = 0;
+    player.madeErrorThisWord = true;
 
     if (player.powerUpEarned) {
       player.powerUpEarned = false;

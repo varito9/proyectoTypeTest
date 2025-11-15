@@ -16,7 +16,7 @@
           </div>
 
           <div v-if="props.isAdmin && player.id !== props.jugador.id" class="admin-actions">
-            <button @click="setAdmin(player.id)" class="btn-admin">Hacer Admin</button>
+            <button @click="setAdmin(player.id)" class="btn-admin">Fer Admin</button>
             <button @click="deletePlayer(player.id)" class="btn-kick">Expulsar</button>
           </div>
         </div>

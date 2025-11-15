@@ -1,9 +1,9 @@
 <template>
   <div class="main-content">
     <div v-if="accessCodeToDisplay" class="access-code-box">
-      Sala Privada 🔒 | Código de Acceso:
+      Sala Privada | Codi d'accés:
       <strong>{{ accessCodeToDisplay }}</strong>
-      <p>Comparte este código para que otros se unan.</p>
+      <p>Comparteix aquest codi perquè altres s'uneixen.</p>
     </div>
 
     <playerList
@@ -24,7 +24,7 @@
 
   <div class="action-bar">
     <button class="comenzar" v-if="isAdmin" :class="['btn', 'btn-start']" @click="startGame">
-      Comenzar
+      Començar
     </button>
     <button
       v-if="!isAdmin"
@@ -412,5 +412,10 @@ function leaveRoom() {
     font-size: 1.2rem;
   }
 }
-/*vista lobby */
+
+.access-code-box {
+  position: fixed;
+  top: 4rem;
+  z-index: 2;
+}
 </style>
