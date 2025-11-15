@@ -1082,7 +1082,7 @@ hr {
   height: 50%;
   gap: 4rem;
 }
-
+/* fons principal */
 .fondo {
   /* Layout principal */
   background: linear-gradient(180deg, #141021 0%, #1c1535 38%, #0057ff 100%);

@@ -26,6 +26,7 @@
 </template>
 
 <script setup>
+/* ranking*/
 import { computed } from 'vue'
 
 const props = defineProps(['llistaJug'])

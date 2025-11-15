@@ -181,6 +181,7 @@ function deletePlayer(id) {
   gap: 1rem; /* Espacio entre botones */
   margin-left: auto;
 }
+/* modificacion targetes*/
 .btn-admin,
 .btn-kick {
   border: none;

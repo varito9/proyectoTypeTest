@@ -610,6 +610,7 @@ props.socket.on('tsunamiHit', () => {
 #game-engine.Flash .debuff-overlay {
   animation: flash-animation 0.4s infinite alternate;
 }
+/*animacions powerup */
 @keyframes flash-animation {
   from {
     background-color: rgb(255, 255, 255);

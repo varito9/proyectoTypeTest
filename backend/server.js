@@ -21,7 +21,7 @@ if (nodeEnv === "production") {
   // En desarrollo, permite cualquier origen
   corsOptions.origin = "*";
 }
-
+/*f */
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server, { cors: corsOptions });

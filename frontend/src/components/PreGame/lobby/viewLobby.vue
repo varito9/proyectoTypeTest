@@ -412,4 +412,5 @@ function leaveRoom() {
     font-size: 1.2rem;
   }
 }
+/*vista lobby */
 </style>
