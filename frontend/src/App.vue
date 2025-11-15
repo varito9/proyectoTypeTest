@@ -3,6 +3,15 @@
     <span class="notification-message">{{ notification.message }}</span>
   </div>
   <div class="fondo" v-if="!isConnected">
+    <!-- Partículas mágicas flotantes -->
+    <div class="magic-particles-login">
+      <div class="particle-layer-login particle-layer-login-1"></div>
+      <div class="particle-layer-login particle-layer-login-2"></div>
+      <div class="particle-layer-login particle-layer-login-3"></div>
+      <div class="particle-layer-login particle-layer-login-4"></div>
+      <div class="particle-layer-login particle-layer-login-5"></div>
+    </div>
+
     <img
       class="mago mago-fuego"
       src="../public/img/MagoFuego-removebg-preview.png"
@@ -49,9 +58,20 @@
   </div>
 
   <div class="fondo" v-else-if="!joinedRoom">
+    <!-- Partículas mágicas flotantes -->
+    <div class="magic-particles">
+      <div class="particle-layer particle-layer-1"></div>
+      <div class="particle-layer particle-layer-2"></div>
+      <div class="particle-layer particle-layer-3"></div>
+      <div class="particle-layer particle-layer-4"></div>
+      <div class="particle-layer particle-layer-5"></div>
+    </div>
+    
     <div class="rooms-page-container">
       <div class="profile-card">
-        <img src="../public/img/Aprendiz_Mago.png" alt="Aprenent de Mag" class="profile-avatar" />
+        <div class="profile-avatar-wrapper">
+          <img src="../public/img/Aprendiz_Mago.png" alt="Aprenent de Mag" class="profile-avatar" />
+        </div>
         <div class="profile-info">
           <span class="badge">Perfil de l'aprenent</span>
           <span class="profile-label">Nom del mag</span>
@@ -103,6 +123,15 @@
   </div>
 
   <div class="fondoLobby" v-else-if="vista === 'preGame'">
+    <!-- Partículas mágicas flotantes para Lobby -->
+    <div class="magic-particles-lobby">
+      <div class="particle-layer-lobby particle-layer-lobby-1"></div>
+      <div class="particle-layer-lobby particle-layer-lobby-2"></div>
+      <div class="particle-layer-lobby particle-layer-lobby-3"></div>
+      <div class="particle-layer-lobby particle-layer-lobby-4"></div>
+      <div class="particle-layer-lobby particle-layer-lobby-5"></div>
+    </div>
+
     <div class="lobby-header">
       <span class="lobby-label">Nom portal</span>
       <h1 class="lobby-room-name">{{ currentRoom }}</h1>
@@ -453,6 +482,211 @@ hr {
 
 /* 3. PÁGINA DE LOGIN (!isConnected) */
 
+/* --- Partículas Mágicas Flotantes para Login --- */
+.magic-particles-login {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+  z-index: 1;
+  overflow: hidden;
+}
+
+.particle-layer-login {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  background-repeat: repeat;
+  opacity: 0.9;
+}
+
+/* Capa 1: Partículas doradas grandes y brillantes */
+.particle-layer-login-1 {
+  background-image: 
+    radial-gradient(8px 8px at 8% 15%, rgba(255, 215, 0, 1), transparent),
+    radial-gradient(6px 6px at 25% 45%, rgba(255, 215, 0, 0.9), transparent),
+    radial-gradient(10px 10px at 45% 75%, rgba(255, 215, 0, 1), transparent),
+    radial-gradient(7px 7px at 65% 25%, rgba(255, 215, 0, 0.95), transparent),
+    radial-gradient(9px 9px at 85% 55%, rgba(255, 215, 0, 1), transparent),
+    radial-gradient(6px 6px at 12% 65%, rgba(255, 215, 0, 0.9), transparent),
+    radial-gradient(8px 8px at 92% 12%, rgba(255, 215, 0, 1), transparent),
+    radial-gradient(7px 7px at 35% 8%, rgba(255, 215, 0, 0.95), transparent),
+    radial-gradient(9px 9px at 75% 88%, rgba(255, 215, 0, 1), transparent),
+    radial-gradient(6px 6px at 18% 92%, rgba(255, 215, 0, 0.9), transparent);
+  background-size: 200% 200%;
+  animation: float-particles-login-1 20s ease-in-out infinite;
+  filter: drop-shadow(0 0 4px rgba(255, 215, 0, 0.8));
+}
+
+/* Capa 2: Partículas blancas brillantes medianas */
+.particle-layer-login-2 {
+  background-image: 
+    radial-gradient(5px 5px at 15% 28%, rgba(255, 255, 255, 1), transparent),
+    radial-gradient(6px 6px at 55% 68%, rgba(255, 255, 255, 0.95), transparent),
+    radial-gradient(4px 4px at 78% 12%, rgba(255, 255, 255, 1), transparent),
+    radial-gradient(7px 7px at 22% 88%, rgba(255, 255, 255, 0.9), transparent),
+    radial-gradient(5px 5px at 72% 48%, rgba(255, 255, 255, 1), transparent),
+    radial-gradient(6px 6px at 42% 22%, rgba(255, 255, 255, 0.95), transparent),
+    radial-gradient(4px 4px at 88% 78%, rgba(255, 255, 255, 1), transparent),
+    radial-gradient(7px 7px at 5% 58%, rgba(255, 255, 255, 0.9), transparent),
+    radial-gradient(5px 5px at 38% 95%, rgba(255, 255, 255, 1), transparent),
+    radial-gradient(6px 6px at 95% 35%, rgba(255, 255, 255, 0.95), transparent);
+  background-size: 180% 180%;
+  animation: float-particles-login-2 25s ease-in-out infinite;
+  animation-delay: -3s;
+  filter: drop-shadow(0 0 3px rgba(255, 255, 255, 0.9));
+}
+
+/* Capa 3: Partículas púrpuras mágicas */
+.particle-layer-login-3 {
+  background-image: 
+    radial-gradient(6px 6px at 32% 38%, rgba(168, 139, 255, 1), transparent),
+    radial-gradient(4px 4px at 62% 18%, rgba(168, 139, 255, 0.95), transparent),
+    radial-gradient(7px 7px at 12% 58%, rgba(168, 139, 255, 1), transparent),
+    radial-gradient(5px 5px at 82% 38%, rgba(168, 139, 255, 0.9), transparent),
+    radial-gradient(6px 6px at 52% 78%, rgba(168, 139, 255, 1), transparent),
+    radial-gradient(4px 4px at 28% 13%, rgba(168, 139, 255, 0.95), transparent),
+    radial-gradient(7px 7px at 92% 68%, rgba(168, 139, 255, 1), transparent),
+    radial-gradient(5px 5px at 48% 88%, rgba(168, 139, 255, 0.9), transparent),
+    radial-gradient(6px 6px at 72% 23%, rgba(168, 139, 255, 1), transparent),
+    radial-gradient(4px 4px at 18% 82%, rgba(168, 139, 255, 0.95), transparent);
+  background-size: 160% 160%;
+  animation: float-particles-login-3 30s ease-in-out infinite;
+  animation-delay: -6s;
+  filter: drop-shadow(0 0 4px rgba(168, 139, 255, 0.8));
+}
+
+/* Capa 4: Partículas brillantes pequeñas (efecto sparkle intenso) */
+.particle-layer-login-4 {
+  background-image: 
+    radial-gradient(3px 3px at 10% 20%, rgba(255, 255, 255, 1), transparent),
+    radial-gradient(3px 3px at 35% 52%, rgba(255, 215, 0, 1), transparent),
+    radial-gradient(2px 2px at 60% 32%, rgba(255, 255, 255, 1), transparent),
+    radial-gradient(3px 3px at 85% 72%, rgba(168, 139, 255, 1), transparent),
+    radial-gradient(2px 2px at 20% 82%, rgba(255, 215, 0, 1), transparent),
+    radial-gradient(3px 3px at 75% 12%, rgba(255, 255, 255, 1), transparent),
+    radial-gradient(2px 2px at 45% 62%, rgba(168, 139, 255, 1), transparent),
+    radial-gradient(3px 3px at 90% 42%, rgba(255, 215, 0, 1), transparent),
+    radial-gradient(2px 2px at 15% 5%, rgba(255, 255, 255, 1), transparent),
+    radial-gradient(3px 3px at 65% 92%, rgba(168, 139, 255, 1), transparent),
+    radial-gradient(2px 2px at 30% 28%, rgba(255, 215, 0, 1), transparent),
+    radial-gradient(3px 3px at 80% 58%, rgba(255, 255, 255, 1), transparent);
+  background-size: 150% 150%;
+  animation: float-particles-login-4 18s ease-in-out infinite, sparkle-particles-login 3s ease-in-out infinite;
+  animation-delay: -9s, 0s;
+  filter: drop-shadow(0 0 2px rgba(255, 255, 255, 1));
+}
+
+/* Capa 5: Partículas doradas pequeñas adicionales */
+.particle-layer-login-5 {
+  background-image: 
+    radial-gradient(4px 4px at 5% 30%, rgba(255, 215, 0, 0.9), transparent),
+    radial-gradient(5px 5px at 40% 15%, rgba(255, 215, 0, 1), transparent),
+    radial-gradient(3px 3px at 70% 45%, rgba(255, 215, 0, 0.95), transparent),
+    radial-gradient(4px 4px at 25% 70%, rgba(255, 215, 0, 0.9), transparent),
+    radial-gradient(5px 5px at 88% 25%, rgba(255, 215, 0, 1), transparent),
+    radial-gradient(3px 3px at 50% 85%, rgba(255, 215, 0, 0.95), transparent),
+    radial-gradient(4px 4px at 15% 50%, rgba(255, 215, 0, 0.9), transparent),
+    radial-gradient(5px 5px at 95% 65%, rgba(255, 215, 0, 1), transparent),
+    radial-gradient(3px 3px at 60% 10%, rgba(255, 215, 0, 0.95), transparent),
+    radial-gradient(4px 4px at 35% 95%, rgba(255, 215, 0, 0.9), transparent);
+  background-size: 170% 170%;
+  animation: float-particles-login-5 22s ease-in-out infinite;
+  animation-delay: -12s;
+  filter: drop-shadow(0 0 3px rgba(255, 215, 0, 0.7));
+}
+
+/* Animaciones de flotación para Login */
+@keyframes float-particles-login-1 {
+  0%, 100% {
+    background-position: 0% 0%, 20% 30%, 40% 50%, 60% 70%, 80% 10%, 15% 70%, 85% 15%, 40% 10%, 75% 88%, 18% 92%;
+    transform: translate(0, 0);
+  }
+  25% {
+    background-position: 10% 10%, 30% 40%, 50% 60%, 70% 80%, 90% 20%, 25% 80%, 95% 25%, 50% 20%, 85% 98%, 28% 102%;
+    transform: translate(8px, -15px);
+  }
+  50% {
+    background-position: 20% 20%, 40% 50%, 60% 70%, 80% 90%, 100% 30%, 35% 90%, 105% 35%, 60% 30%, 95% 108%, 38% 112%;
+    transform: translate(-8px, -25px);
+  }
+  75% {
+    background-position: 10% 10%, 30% 40%, 50% 60%, 70% 80%, 90% 20%, 25% 80%, 95% 25%, 50% 20%, 85% 98%, 28% 102%;
+    transform: translate(8px, -15px);
+  }
+}
+
+@keyframes float-particles-login-2 {
+  0%, 100% {
+    background-position: 0% 0%, 20% 30%, 40% 50%, 60% 70%, 80% 10%, 25% 90%, 75% 50%, 45% 25%, 38% 95%, 95% 35%;
+    transform: translate(0, 0);
+  }
+  33% {
+    background-position: -10% 10%, 10% 40%, 30% 60%, 50% 80%, 70% 20%, 15% 100%, 65% 60%, 35% 35%, 28% 105%, 85% 45%;
+    transform: translate(-12px, 8px);
+  }
+  66% {
+    background-position: 10% -10%, 30% 20%, 50% 40%, 70% 60%, 90% 0%, 35% 80%, 85% 40%, 55% 15%, 48% 85%, 105% 25%;
+    transform: translate(12px, -8px);
+  }
+}
+
+@keyframes float-particles-login-3 {
+  0%, 100% {
+    background-position: 0% 0%, 20% 30%, 40% 50%, 60% 70%, 80% 10%, 15% 60%, 85% 40%, 55% 80%, 25% 15%, 18% 82%;
+    transform: translate(0, 0);
+  }
+  25% {
+    background-position: 15% 15%, 35% 45%, 55% 65%, 75% 85%, 95% 25%, 30% 75%, 100% 55%, 70% 95%, 40% 30%, 33% 97%;
+    transform: translate(10px, 10px);
+  }
+  50% {
+    background-position: -15% -15%, 5% 15%, 25% 35%, 45% 55%, 65% 5%, 0% 45%, 70% 25%, 40% 65%, 10% 0%, 3% 67%;
+    transform: translate(-10px, -10px);
+  }
+  75% {
+    background-position: 15% 15%, 35% 45%, 55% 65%, 75% 85%, 95% 25%, 30% 75%, 100% 55%, 70% 95%, 40% 30%, 33% 97%;
+    transform: translate(10px, 10px);
+  }
+}
+
+@keyframes float-particles-login-4 {
+  0%, 100% {
+    background-position: 0% 0%, 20% 30%, 40% 50%, 60% 70%, 80% 10%, 15% 70%, 85% 15%, 40% 10%, 65% 90%, 18% 5%, 30% 28%, 80% 58%;
+    transform: translate(0, 0);
+  }
+  50% {
+    background-position: 20% 20%, 40% 50%, 60% 70%, 80% 90%, 100% 30%, 35% 90%, 105% 35%, 60% 30%, 85% 110%, 38% 25%, 50% 48%, 100% 78%;
+    transform: translate(-6px, 6px);
+  }
+}
+
+@keyframes float-particles-login-5 {
+  0%, 100% {
+    background-position: 0% 0%, 20% 30%, 40% 50%, 60% 70%, 80% 10%, 15% 70%, 85% 15%, 40% 10%, 60% 10%, 35% 95%;
+    transform: translate(0, 0);
+  }
+  33% {
+    background-position: 12% 12%, 32% 42%, 52% 62%, 72% 82%, 92% 22%, 27% 82%, 97% 27%, 52% 22%, 72% 22%, 47% 107%;
+    transform: translate(7px, -12px);
+  }
+  66% {
+    background-position: -12% -12%, 8% 18%, 28% 38%, 48% 58%, 68% -2%, 3% 58%, 73% 3%, 28% -2%, 48% -2%, 23% 83%;
+    transform: translate(-7px, 12px);
+  }
+}
+
+@keyframes sparkle-particles-login {
+  0%, 100% {
+    opacity: 0.7;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
 /* --- Contenedor del formulario --- */
 .fondoLobby {
   position: relative; /* ¡MUY IMPORTANTE! */
@@ -466,6 +700,212 @@ hr {
   flex-direction: column;
   gap: 24px;
   box-sizing: border-box;
+  overflow: hidden;
+}
+
+/* --- Partículas Mágicas Flotantes para Lobby --- */
+.magic-particles-lobby {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+  z-index: 1;
+  overflow: hidden;
+}
+
+.particle-layer-lobby {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  background-repeat: repeat;
+  opacity: 0.9;
+}
+
+/* Capa 1: Partículas doradas grandes y brillantes */
+.particle-layer-lobby-1 {
+  background-image: 
+    radial-gradient(8px 8px at 8% 15%, rgba(255, 215, 0, 1), transparent),
+    radial-gradient(6px 6px at 25% 45%, rgba(255, 215, 0, 0.9), transparent),
+    radial-gradient(10px 10px at 45% 75%, rgba(255, 215, 0, 1), transparent),
+    radial-gradient(7px 7px at 65% 25%, rgba(255, 215, 0, 0.95), transparent),
+    radial-gradient(9px 9px at 85% 55%, rgba(255, 215, 0, 1), transparent),
+    radial-gradient(6px 6px at 12% 65%, rgba(255, 215, 0, 0.9), transparent),
+    radial-gradient(8px 8px at 92% 12%, rgba(255, 215, 0, 1), transparent),
+    radial-gradient(7px 7px at 35% 8%, rgba(255, 215, 0, 0.95), transparent),
+    radial-gradient(9px 9px at 75% 88%, rgba(255, 215, 0, 1), transparent),
+    radial-gradient(6px 6px at 18% 92%, rgba(255, 215, 0, 0.9), transparent);
+  background-size: 200% 200%;
+  animation: float-particles-lobby-1 20s ease-in-out infinite;
+  filter: drop-shadow(0 0 4px rgba(255, 215, 0, 0.8));
+}
+
+/* Capa 2: Partículas blancas brillantes medianas */
+.particle-layer-lobby-2 {
+  background-image: 
+    radial-gradient(5px 5px at 15% 28%, rgba(255, 255, 255, 1), transparent),
+    radial-gradient(6px 6px at 55% 68%, rgba(255, 255, 255, 0.95), transparent),
+    radial-gradient(4px 4px at 78% 12%, rgba(255, 255, 255, 1), transparent),
+    radial-gradient(7px 7px at 22% 88%, rgba(255, 255, 255, 0.9), transparent),
+    radial-gradient(5px 5px at 72% 48%, rgba(255, 255, 255, 1), transparent),
+    radial-gradient(6px 6px at 42% 22%, rgba(255, 255, 255, 0.95), transparent),
+    radial-gradient(4px 4px at 88% 78%, rgba(255, 255, 255, 1), transparent),
+    radial-gradient(7px 7px at 5% 58%, rgba(255, 255, 255, 0.9), transparent),
+    radial-gradient(5px 5px at 38% 95%, rgba(255, 255, 255, 1), transparent),
+    radial-gradient(6px 6px at 95% 35%, rgba(255, 255, 255, 0.95), transparent);
+  background-size: 180% 180%;
+  animation: float-particles-lobby-2 25s ease-in-out infinite;
+  animation-delay: -3s;
+  filter: drop-shadow(0 0 3px rgba(255, 255, 255, 0.9));
+}
+
+/* Capa 3: Partículas púrpuras mágicas */
+.particle-layer-lobby-3 {
+  background-image: 
+    radial-gradient(6px 6px at 32% 38%, rgba(168, 139, 255, 1), transparent),
+    radial-gradient(4px 4px at 62% 18%, rgba(168, 139, 255, 0.95), transparent),
+    radial-gradient(7px 7px at 12% 58%, rgba(168, 139, 255, 1), transparent),
+    radial-gradient(5px 5px at 82% 38%, rgba(168, 139, 255, 0.9), transparent),
+    radial-gradient(6px 6px at 52% 78%, rgba(168, 139, 255, 1), transparent),
+    radial-gradient(4px 4px at 28% 13%, rgba(168, 139, 255, 0.95), transparent),
+    radial-gradient(7px 7px at 92% 68%, rgba(168, 139, 255, 1), transparent),
+    radial-gradient(5px 5px at 48% 88%, rgba(168, 139, 255, 0.9), transparent),
+    radial-gradient(6px 6px at 72% 23%, rgba(168, 139, 255, 1), transparent),
+    radial-gradient(4px 4px at 18% 82%, rgba(168, 139, 255, 0.95), transparent);
+  background-size: 160% 160%;
+  animation: float-particles-lobby-3 30s ease-in-out infinite;
+  animation-delay: -6s;
+  filter: drop-shadow(0 0 4px rgba(168, 139, 255, 0.8));
+}
+
+/* Capa 4: Partículas brillantes pequeñas (efecto sparkle intenso) */
+.particle-layer-lobby-4 {
+  background-image: 
+    radial-gradient(3px 3px at 10% 20%, rgba(255, 255, 255, 1), transparent),
+    radial-gradient(3px 3px at 35% 52%, rgba(255, 215, 0, 1), transparent),
+    radial-gradient(2px 2px at 60% 32%, rgba(255, 255, 255, 1), transparent),
+    radial-gradient(3px 3px at 85% 72%, rgba(168, 139, 255, 1), transparent),
+    radial-gradient(2px 2px at 20% 82%, rgba(255, 215, 0, 1), transparent),
+    radial-gradient(3px 3px at 75% 12%, rgba(255, 255, 255, 1), transparent),
+    radial-gradient(2px 2px at 45% 62%, rgba(168, 139, 255, 1), transparent),
+    radial-gradient(3px 3px at 90% 42%, rgba(255, 215, 0, 1), transparent),
+    radial-gradient(2px 2px at 15% 5%, rgba(255, 255, 255, 1), transparent),
+    radial-gradient(3px 3px at 65% 92%, rgba(168, 139, 255, 1), transparent),
+    radial-gradient(2px 2px at 30% 28%, rgba(255, 215, 0, 1), transparent),
+    radial-gradient(3px 3px at 80% 58%, rgba(255, 255, 255, 1), transparent);
+  background-size: 150% 150%;
+  animation: float-particles-lobby-4 18s ease-in-out infinite, sparkle-particles-lobby 3s ease-in-out infinite;
+  animation-delay: -9s, 0s;
+  filter: drop-shadow(0 0 2px rgba(255, 255, 255, 1));
+}
+
+/* Capa 5: Partículas doradas pequeñas adicionales */
+.particle-layer-lobby-5 {
+  background-image: 
+    radial-gradient(4px 4px at 5% 30%, rgba(255, 215, 0, 0.9), transparent),
+    radial-gradient(5px 5px at 40% 15%, rgba(255, 215, 0, 1), transparent),
+    radial-gradient(3px 3px at 70% 45%, rgba(255, 215, 0, 0.95), transparent),
+    radial-gradient(4px 4px at 25% 70%, rgba(255, 215, 0, 0.9), transparent),
+    radial-gradient(5px 5px at 88% 25%, rgba(255, 215, 0, 1), transparent),
+    radial-gradient(3px 3px at 50% 85%, rgba(255, 215, 0, 0.95), transparent),
+    radial-gradient(4px 4px at 15% 50%, rgba(255, 215, 0, 0.9), transparent),
+    radial-gradient(5px 5px at 95% 65%, rgba(255, 215, 0, 1), transparent),
+    radial-gradient(3px 3px at 60% 10%, rgba(255, 215, 0, 0.95), transparent),
+    radial-gradient(4px 4px at 35% 95%, rgba(255, 215, 0, 0.9), transparent);
+  background-size: 170% 170%;
+  animation: float-particles-lobby-5 22s ease-in-out infinite;
+  animation-delay: -12s;
+  filter: drop-shadow(0 0 3px rgba(255, 215, 0, 0.7));
+}
+
+/* Animaciones de flotación para Lobby */
+@keyframes float-particles-lobby-1 {
+  0%, 100% {
+    background-position: 0% 0%, 20% 30%, 40% 50%, 60% 70%, 80% 10%, 15% 70%, 85% 15%, 40% 10%, 75% 88%, 18% 92%;
+    transform: translate(0, 0);
+  }
+  25% {
+    background-position: 10% 10%, 30% 40%, 50% 60%, 70% 80%, 90% 20%, 25% 80%, 95% 25%, 50% 20%, 85% 98%, 28% 102%;
+    transform: translate(8px, -15px);
+  }
+  50% {
+    background-position: 20% 20%, 40% 50%, 60% 70%, 80% 90%, 100% 30%, 35% 90%, 105% 35%, 60% 30%, 95% 108%, 38% 112%;
+    transform: translate(-8px, -25px);
+  }
+  75% {
+    background-position: 10% 10%, 30% 40%, 50% 60%, 70% 80%, 90% 20%, 25% 80%, 95% 25%, 50% 20%, 85% 98%, 28% 102%;
+    transform: translate(8px, -15px);
+  }
+}
+
+@keyframes float-particles-lobby-2 {
+  0%, 100% {
+    background-position: 0% 0%, 20% 30%, 40% 50%, 60% 70%, 80% 10%, 25% 90%, 75% 50%, 45% 25%, 38% 95%, 95% 35%;
+    transform: translate(0, 0);
+  }
+  33% {
+    background-position: -10% 10%, 10% 40%, 30% 60%, 50% 80%, 70% 20%, 15% 100%, 65% 60%, 35% 35%, 28% 105%, 85% 45%;
+    transform: translate(-12px, 8px);
+  }
+  66% {
+    background-position: 10% -10%, 30% 20%, 50% 40%, 70% 60%, 90% 0%, 35% 80%, 85% 40%, 55% 15%, 48% 85%, 105% 25%;
+    transform: translate(12px, -8px);
+  }
+}
+
+@keyframes float-particles-lobby-3 {
+  0%, 100% {
+    background-position: 0% 0%, 20% 30%, 40% 50%, 60% 70%, 80% 10%, 15% 60%, 85% 40%, 55% 80%, 25% 15%, 18% 82%;
+    transform: translate(0, 0);
+  }
+  25% {
+    background-position: 15% 15%, 35% 45%, 55% 65%, 75% 85%, 95% 25%, 30% 75%, 100% 55%, 70% 95%, 40% 30%, 33% 97%;
+    transform: translate(10px, 10px);
+  }
+  50% {
+    background-position: -15% -15%, 5% 15%, 25% 35%, 45% 55%, 65% 5%, 0% 45%, 70% 25%, 40% 65%, 10% 0%, 3% 67%;
+    transform: translate(-10px, -10px);
+  }
+  75% {
+    background-position: 15% 15%, 35% 45%, 55% 65%, 75% 85%, 95% 25%, 30% 75%, 100% 55%, 70% 95%, 40% 30%, 33% 97%;
+    transform: translate(10px, 10px);
+  }
+}
+
+@keyframes float-particles-lobby-4 {
+  0%, 100% {
+    background-position: 0% 0%, 20% 30%, 40% 50%, 60% 70%, 80% 10%, 15% 70%, 85% 15%, 40% 10%, 65% 90%, 18% 5%, 30% 28%, 80% 58%;
+    transform: translate(0, 0);
+  }
+  50% {
+    background-position: 20% 20%, 40% 50%, 60% 70%, 80% 90%, 100% 30%, 35% 90%, 105% 35%, 60% 30%, 85% 110%, 38% 25%, 50% 48%, 100% 78%;
+    transform: translate(-6px, 6px);
+  }
+}
+
+@keyframes float-particles-lobby-5 {
+  0%, 100% {
+    background-position: 0% 0%, 20% 30%, 40% 50%, 60% 70%, 80% 10%, 15% 70%, 85% 15%, 40% 10%, 60% 10%, 35% 95%;
+    transform: translate(0, 0);
+  }
+  33% {
+    background-position: 12% 12%, 32% 42%, 52% 62%, 72% 82%, 92% 22%, 27% 82%, 97% 27%, 52% 22%, 72% 22%, 47% 107%;
+    transform: translate(7px, -12px);
+  }
+  66% {
+    background-position: -12% -12%, 8% 18%, 28% 38%, 48% 58%, 68% -2%, 3% 58%, 73% 3%, 28% -2%, 48% -2%, 23% 83%;
+    transform: translate(-7px, 12px);
+  }
+}
+
+@keyframes sparkle-particles-lobby {
+  0%, 100% {
+    opacity: 0.7;
+  }
+  50% {
+    opacity: 1;
+  }
 }
 
 .game-layout {
@@ -515,6 +955,8 @@ hr {
   flex-direction: column;
   align-items: flex-start;
   gap: -10px;
+  position: relative;
+  z-index: 2;
 }
 
 .lobby-label {
@@ -544,7 +986,7 @@ hr {
 /* --- ESTILS DEL LOGIN CONTAINER --- */
 .login-container {
   position: relative; /* Necesario para z-index */
-  z-index: 2;
+  z-index: 3;
   width: 50%;
   text-align: center; /* Centra el texto */
   height: 80%;
@@ -612,7 +1054,7 @@ hr {
   position: absolute;
   width: 20%;
   height: auto;
-  z-index: 1;
+  z-index: 2;
 }
 .mago-obscuro {
   bottom: -80px;
@@ -641,6 +1083,211 @@ hr {
 
 /* 4. PÁGINA DE SALAS (!joinedRoom) */
 
+/* --- Partículas Mágicas Flotantes --- */
+.magic-particles {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+  z-index: 1;
+  overflow: hidden;
+}
+
+.particle-layer {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  background-repeat: repeat;
+  opacity: 0.9;
+}
+
+/* Capa 1: Partículas doradas grandes y brillantes */
+.particle-layer-1 {
+  background-image: 
+    radial-gradient(8px 8px at 8% 15%, rgba(255, 215, 0, 1), transparent),
+    radial-gradient(6px 6px at 25% 45%, rgba(255, 215, 0, 0.9), transparent),
+    radial-gradient(10px 10px at 45% 75%, rgba(255, 215, 0, 1), transparent),
+    radial-gradient(7px 7px at 65% 25%, rgba(255, 215, 0, 0.95), transparent),
+    radial-gradient(9px 9px at 85% 55%, rgba(255, 215, 0, 1), transparent),
+    radial-gradient(6px 6px at 12% 65%, rgba(255, 215, 0, 0.9), transparent),
+    radial-gradient(8px 8px at 92% 12%, rgba(255, 215, 0, 1), transparent),
+    radial-gradient(7px 7px at 35% 8%, rgba(255, 215, 0, 0.95), transparent),
+    radial-gradient(9px 9px at 75% 88%, rgba(255, 215, 0, 1), transparent),
+    radial-gradient(6px 6px at 18% 92%, rgba(255, 215, 0, 0.9), transparent);
+  background-size: 200% 200%;
+  animation: float-particles-1 20s ease-in-out infinite;
+  filter: drop-shadow(0 0 4px rgba(255, 215, 0, 0.8));
+}
+
+/* Capa 2: Partículas blancas brillantes medianas */
+.particle-layer-2 {
+  background-image: 
+    radial-gradient(5px 5px at 15% 28%, rgba(255, 255, 255, 1), transparent),
+    radial-gradient(6px 6px at 55% 68%, rgba(255, 255, 255, 0.95), transparent),
+    radial-gradient(4px 4px at 78% 12%, rgba(255, 255, 255, 1), transparent),
+    radial-gradient(7px 7px at 22% 88%, rgba(255, 255, 255, 0.9), transparent),
+    radial-gradient(5px 5px at 72% 48%, rgba(255, 255, 255, 1), transparent),
+    radial-gradient(6px 6px at 42% 22%, rgba(255, 255, 255, 0.95), transparent),
+    radial-gradient(4px 4px at 88% 78%, rgba(255, 255, 255, 1), transparent),
+    radial-gradient(7px 7px at 5% 58%, rgba(255, 255, 255, 0.9), transparent),
+    radial-gradient(5px 5px at 38% 95%, rgba(255, 255, 255, 1), transparent),
+    radial-gradient(6px 6px at 95% 35%, rgba(255, 255, 255, 0.95), transparent);
+  background-size: 180% 180%;
+  animation: float-particles-2 25s ease-in-out infinite;
+  animation-delay: -3s;
+  filter: drop-shadow(0 0 3px rgba(255, 255, 255, 0.9));
+}
+
+/* Capa 3: Partículas púrpuras mágicas */
+.particle-layer-3 {
+  background-image: 
+    radial-gradient(6px 6px at 32% 38%, rgba(168, 139, 255, 1), transparent),
+    radial-gradient(4px 4px at 62% 18%, rgba(168, 139, 255, 0.95), transparent),
+    radial-gradient(7px 7px at 12% 58%, rgba(168, 139, 255, 1), transparent),
+    radial-gradient(5px 5px at 82% 38%, rgba(168, 139, 255, 0.9), transparent),
+    radial-gradient(6px 6px at 52% 78%, rgba(168, 139, 255, 1), transparent),
+    radial-gradient(4px 4px at 28% 13%, rgba(168, 139, 255, 0.95), transparent),
+    radial-gradient(7px 7px at 92% 68%, rgba(168, 139, 255, 1), transparent),
+    radial-gradient(5px 5px at 48% 88%, rgba(168, 139, 255, 0.9), transparent),
+    radial-gradient(6px 6px at 72% 23%, rgba(168, 139, 255, 1), transparent),
+    radial-gradient(4px 4px at 18% 82%, rgba(168, 139, 255, 0.95), transparent);
+  background-size: 160% 160%;
+  animation: float-particles-3 30s ease-in-out infinite;
+  animation-delay: -6s;
+  filter: drop-shadow(0 0 4px rgba(168, 139, 255, 0.8));
+}
+
+/* Capa 4: Partículas brillantes pequeñas (efecto sparkle intenso) */
+.particle-layer-4 {
+  background-image: 
+    radial-gradient(3px 3px at 10% 20%, rgba(255, 255, 255, 1), transparent),
+    radial-gradient(3px 3px at 35% 52%, rgba(255, 215, 0, 1), transparent),
+    radial-gradient(2px 2px at 60% 32%, rgba(255, 255, 255, 1), transparent),
+    radial-gradient(3px 3px at 85% 72%, rgba(168, 139, 255, 1), transparent),
+    radial-gradient(2px 2px at 20% 82%, rgba(255, 215, 0, 1), transparent),
+    radial-gradient(3px 3px at 75% 12%, rgba(255, 255, 255, 1), transparent),
+    radial-gradient(2px 2px at 45% 62%, rgba(168, 139, 255, 1), transparent),
+    radial-gradient(3px 3px at 90% 42%, rgba(255, 215, 0, 1), transparent),
+    radial-gradient(2px 2px at 15% 5%, rgba(255, 255, 255, 1), transparent),
+    radial-gradient(3px 3px at 65% 92%, rgba(168, 139, 255, 1), transparent),
+    radial-gradient(2px 2px at 30% 28%, rgba(255, 215, 0, 1), transparent),
+    radial-gradient(3px 3px at 80% 58%, rgba(255, 255, 255, 1), transparent);
+  background-size: 150% 150%;
+  animation: float-particles-4 18s ease-in-out infinite, sparkle-particles 3s ease-in-out infinite;
+  animation-delay: -9s, 0s;
+  filter: drop-shadow(0 0 2px rgba(255, 255, 255, 1));
+}
+
+/* Capa 5: Partículas doradas pequeñas adicionales */
+.particle-layer-5 {
+  background-image: 
+    radial-gradient(4px 4px at 5% 30%, rgba(255, 215, 0, 0.9), transparent),
+    radial-gradient(5px 5px at 40% 15%, rgba(255, 215, 0, 1), transparent),
+    radial-gradient(3px 3px at 70% 45%, rgba(255, 215, 0, 0.95), transparent),
+    radial-gradient(4px 4px at 25% 70%, rgba(255, 215, 0, 0.9), transparent),
+    radial-gradient(5px 5px at 88% 25%, rgba(255, 215, 0, 1), transparent),
+    radial-gradient(3px 3px at 50% 85%, rgba(255, 215, 0, 0.95), transparent),
+    radial-gradient(4px 4px at 15% 50%, rgba(255, 215, 0, 0.9), transparent),
+    radial-gradient(5px 5px at 95% 65%, rgba(255, 215, 0, 1), transparent),
+    radial-gradient(3px 3px at 60% 10%, rgba(255, 215, 0, 0.95), transparent),
+    radial-gradient(4px 4px at 35% 95%, rgba(255, 215, 0, 0.9), transparent);
+  background-size: 170% 170%;
+  animation: float-particles-5 22s ease-in-out infinite;
+  animation-delay: -12s;
+  filter: drop-shadow(0 0 3px rgba(255, 215, 0, 0.7));
+}
+
+/* Animaciones de flotación */
+@keyframes float-particles-1 {
+  0%, 100% {
+    background-position: 0% 0%, 20% 30%, 40% 50%, 60% 70%, 80% 10%, 15% 70%, 85% 15%, 40% 10%, 75% 88%, 18% 92%;
+    transform: translate(0, 0);
+  }
+  25% {
+    background-position: 10% 10%, 30% 40%, 50% 60%, 70% 80%, 90% 20%, 25% 80%, 95% 25%, 50% 20%, 85% 98%, 28% 102%;
+    transform: translate(8px, -15px);
+  }
+  50% {
+    background-position: 20% 20%, 40% 50%, 60% 70%, 80% 90%, 100% 30%, 35% 90%, 105% 35%, 60% 30%, 95% 108%, 38% 112%;
+    transform: translate(-8px, -25px);
+  }
+  75% {
+    background-position: 10% 10%, 30% 40%, 50% 60%, 70% 80%, 90% 20%, 25% 80%, 95% 25%, 50% 20%, 85% 98%, 28% 102%;
+    transform: translate(8px, -15px);
+  }
+}
+
+@keyframes float-particles-2 {
+  0%, 100% {
+    background-position: 0% 0%, 20% 30%, 40% 50%, 60% 70%, 80% 10%, 25% 90%, 75% 50%, 45% 25%, 38% 95%, 95% 35%;
+    transform: translate(0, 0);
+  }
+  33% {
+    background-position: -10% 10%, 10% 40%, 30% 60%, 50% 80%, 70% 20%, 15% 100%, 65% 60%, 35% 35%, 28% 105%, 85% 45%;
+    transform: translate(-12px, 8px);
+  }
+  66% {
+    background-position: 10% -10%, 30% 20%, 50% 40%, 70% 60%, 90% 0%, 35% 80%, 85% 40%, 55% 15%, 48% 85%, 105% 25%;
+    transform: translate(12px, -8px);
+  }
+}
+
+@keyframes float-particles-3 {
+  0%, 100% {
+    background-position: 0% 0%, 20% 30%, 40% 50%, 60% 70%, 80% 10%, 15% 60%, 85% 40%, 55% 80%, 25% 15%, 18% 82%;
+    transform: translate(0, 0);
+  }
+  25% {
+    background-position: 15% 15%, 35% 45%, 55% 65%, 75% 85%, 95% 25%, 30% 75%, 100% 55%, 70% 95%, 40% 30%, 33% 97%;
+    transform: translate(10px, 10px);
+  }
+  50% {
+    background-position: -15% -15%, 5% 15%, 25% 35%, 45% 55%, 65% 5%, 0% 45%, 70% 25%, 40% 65%, 10% 0%, 3% 67%;
+    transform: translate(-10px, -10px);
+  }
+  75% {
+    background-position: 15% 15%, 35% 45%, 55% 65%, 75% 85%, 95% 25%, 30% 75%, 100% 55%, 70% 95%, 40% 30%, 33% 97%;
+    transform: translate(10px, 10px);
+  }
+}
+
+@keyframes float-particles-4 {
+  0%, 100% {
+    background-position: 0% 0%, 20% 30%, 40% 50%, 60% 70%, 80% 10%, 15% 70%, 85% 15%, 40% 10%, 65% 90%, 18% 5%, 30% 28%, 80% 58%;
+    transform: translate(0, 0);
+  }
+  50% {
+    background-position: 20% 20%, 40% 50%, 60% 70%, 80% 90%, 100% 30%, 35% 90%, 105% 35%, 60% 30%, 85% 110%, 38% 25%, 50% 48%, 100% 78%;
+    transform: translate(-6px, 6px);
+  }
+}
+
+@keyframes float-particles-5 {
+  0%, 100% {
+    background-position: 0% 0%, 20% 30%, 40% 50%, 60% 70%, 80% 10%, 15% 70%, 85% 15%, 40% 10%, 60% 10%, 35% 95%;
+    transform: translate(0, 0);
+  }
+  33% {
+    background-position: 12% 12%, 32% 42%, 52% 62%, 72% 82%, 92% 22%, 27% 82%, 97% 27%, 52% 22%, 72% 22%, 47% 107%;
+    transform: translate(7px, -12px);
+  }
+  66% {
+    background-position: -12% -12%, 8% 18%, 28% 38%, 48% 58%, 68% -2%, 3% 58%, 73% 3%, 28% -2%, 48% -2%, 23% 83%;
+    transform: translate(-7px, 12px);
+  }
+}
+
+@keyframes sparkle-particles {
+  0%, 100% {
+    opacity: 0.7;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
 /* --- Layout principal de la página de salas (Grid) --- */
 .rooms-page-container {
   display: grid;
@@ -651,6 +1298,8 @@ hr {
   height: 100%;
   padding: 20px;
   box-sizing: border-box;
+  position: relative;
+  z-index: 2;
 }
 
 /* --- 4.1. Tarjeta de Perfil (Arriba-Izquierda) --- */
@@ -709,17 +1358,136 @@ hr {
 }
 
 /* --- 4.1. (Internos) Tarjeta de Perfil --- */
-.profile-avatar {
+.profile-avatar-wrapper {
   grid-row: 1 / 2;
   grid-column: 1 / 2;
-  width: 100%;
-  height: 100%;
-  aspect-ratio: 1;
+  position: relative;
+  width: 180px;
+  height: 180px;
   justify-self: center;
   align-self: center;
+  overflow: visible;
+}
+
+/* Anillo mágico giratorio */
+.profile-avatar-wrapper::before {
+  content: '';
+  position: absolute;
+  top: -15px;
+  left: -15px;
+  right: -15px;
+  bottom: -15px;
+  background: 
+    radial-gradient(circle, rgba(168, 139, 255, 0.5) 0%, transparent 70%),
+    repeating-conic-gradient(
+      from 0deg at 50% 50%,
+      rgba(138, 43, 226, 0.15) 0deg,
+      transparent 15deg,
+      rgba(168, 139, 255, 0.15) 30deg,
+      transparent 45deg
+    );
+  border-radius: 50%;
+  z-index: 0;
+  animation: rotate 20s linear infinite;
+}
+
+/* Destellos mágicos - Partículas flotantes */
+.profile-avatar-wrapper::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 220px;
+  height: 220px;
+  background-image: 
+    radial-gradient(3px 3px at 20% 30%, rgba(255, 215, 0, 1), transparent),
+    radial-gradient(2px 2px at 60% 70%, rgba(255, 255, 255, 0.9), transparent),
+    radial-gradient(2px 2px at 50% 50%, rgba(168, 139, 255, 1), transparent),
+    radial-gradient(1px 1px at 80% 10%, rgba(255, 215, 0, 0.8), transparent),
+    radial-gradient(3px 3px at 90% 40%, rgba(255, 255, 255, 0.9), transparent),
+    radial-gradient(2px 2px at 33% 60%, rgba(168, 139, 255, 0.8), transparent),
+    radial-gradient(1px 1px at 66% 20%, rgba(255, 215, 0, 0.9), transparent),
+    radial-gradient(3px 3px at 10% 80%, rgba(255, 255, 255, 1), transparent),
+    radial-gradient(2px 2px at 40% 90%, rgba(168, 139, 255, 0.7), transparent),
+    radial-gradient(2px 2px at 70% 50%, rgba(255, 215, 0, 0.9), transparent),
+    radial-gradient(1px 1px at 25% 75%, rgba(255, 255, 255, 0.8), transparent),
+    radial-gradient(2px 2px at 15% 45%, rgba(168, 139, 255, 0.9), transparent),
+    radial-gradient(1px 1px at 85% 65%, rgba(255, 215, 0, 0.8), transparent);
+  background-size: 200% 200%, 150% 150%, 180% 180%, 160% 160%, 170% 170%, 140% 140%, 190% 190%, 130% 130%, 120% 120%, 110% 110%, 100% 100%, 105% 105%, 115% 115%;
+  background-position: 0% 0%, 20% 30%, 40% 50%, 60% 70%, 80% 10%, 30% 60%, 70% 20%, 10% 80%, 50% 90%, 70% 50%, 25% 75%, 15% 45%, 85% 65%;
+  animation: sparkle 3s ease-in-out infinite, float-sparkles 8s ease-in-out infinite;
+  pointer-events: none;
+  z-index: 2;
+  border-radius: 50%;
+}
+
+@keyframes rotate {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes sparkle {
+  0%, 100% {
+    opacity: 0.7;
+    transform: translate(-50%, -50%) scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1.15);
+  }
+}
+
+@keyframes float-sparkles {
+  0%, 100% {
+    background-position: 0% 0%, 20% 30%, 40% 50%, 60% 70%, 80% 10%, 30% 60%, 70% 20%, 10% 80%, 50% 90%, 70% 50%, 25% 75%, 15% 45%, 85% 65%;
+  }
+  25% {
+    background-position: 10% 10%, 30% 40%, 50% 60%, 70% 80%, 90% 20%, 40% 70%, 80% 30%, 20% 90%, 60% 100%, 80% 60%, 35% 85%, 25% 55%, 95% 75%;
+  }
+  50% {
+    background-position: 20% 20%, 40% 50%, 60% 70%, 80% 90%, 100% 30%, 50% 80%, 90% 40%, 30% 100%, 70% 110%, 90% 70%, 45% 95%, 35% 65%, 105% 85%;
+  }
+  75% {
+    background-position: 10% 10%, 30% 40%, 50% 60%, 70% 80%, 90% 20%, 40% 70%, 80% 30%, 20% 90%, 60% 100%, 80% 60%, 35% 85%, 25% 55%, 95% 75%;
+  }
+}
+
+.profile-avatar {
+  position: relative;
+  width: 100%;
+  height: 100%;
   object-fit: cover;
-  border-radius: 100%; /* Para hacerlo redondo */
-  border: 1px solid #a88bff; /* Borde lila */
+  border-radius: 50%;
+  border: 3px solid rgba(168, 139, 255, 0.7);
+  box-shadow: 
+    0 0 30px rgba(168, 139, 255, 0.8),
+    0 0 60px rgba(255, 215, 0, 0.5),
+    inset 0 0 30px rgba(138, 43, 226, 0.3);
+  z-index: 1;
+  background: radial-gradient(circle, rgba(138, 43, 226, 0.25) 0%, transparent 70%);
+  animation: pulse-glow 2.5s ease-in-out infinite;
+}
+
+@keyframes pulse-glow {
+  0%, 100% {
+    box-shadow: 
+      0 0 30px rgba(168, 139, 255, 0.8),
+      0 0 60px rgba(255, 215, 0, 0.5),
+      inset 0 0 30px rgba(138, 43, 226, 0.3);
+    border-color: rgba(168, 139, 255, 0.7);
+  }
+  50% {
+    box-shadow: 
+      0 0 45px rgba(168, 139, 255, 1),
+      0 0 90px rgba(255, 215, 0, 0.7),
+      inset 0 0 45px rgba(138, 43, 226, 0.5);
+    border-color: rgba(168, 139, 255, 0.9);
+  }
 }
 
 .profile-info {
