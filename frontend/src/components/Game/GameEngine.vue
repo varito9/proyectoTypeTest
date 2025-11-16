@@ -200,29 +200,64 @@
         <div v-for="i in 8" :key="`drop-s-${i}`" class="water-drop" :style="{ '--pos': i }"></div>
       </div>
       <div v-if="gameTheme === 'theme-earth'" class="book-decoration jungle-vines">
-        <div v-for="i in 6" :key="`vine-dec-s-${i}`" class="vine-decoration" :style="{ '--side': i % 2 }"></div>
+        <div
+          v-for="i in 6"
+          :key="`vine-dec-s-${i}`"
+          class="vine-decoration"
+          :style="{ '--side': i % 2 }"
+        ></div>
       </div>
       <div v-if="gameTheme === 'theme-light'" class="book-decoration light-sparkles">
-        <div v-for="i in 12" :key="`sparkle-s-${i}`" class="sparkle" :style="{ '--angle': i * 30 + 'deg' }"></div>
+        <div
+          v-for="i in 12"
+          :key="`sparkle-s-${i}`"
+          class="sparkle"
+          :style="{ '--angle': i * 30 + 'deg' }"
+        ></div>
       </div>
       <div v-if="gameTheme === 'theme-fire'" class="book-decoration fire-flames">
-        <div v-for="i in 4" :key="`flame-s-${i}`" class="flame-decoration" :style="{ '--side': i }"></div>
+        <div
+          v-for="i in 4"
+          :key="`flame-s-${i}`"
+          class="flame-decoration"
+          :style="{ '--side': i }"
+        ></div>
       </div>
       <div v-if="gameTheme === 'theme-dark'" class="book-decoration dark-mist">
-        <div v-for="i in 6" :key="`mist-s-${i}`" class="mist-decoration" :style="{ '--layer': i }"></div>
+        <div
+          v-for="i in 6"
+          :key="`mist-s-${i}`"
+          class="mist-decoration"
+          :style="{ '--layer': i }"
+        ></div>
       </div>
       <div v-if="gameTheme === 'theme-ice'" class="book-decoration ice-crystals">
-        <div v-for="i in 8" :key="`crystal-s-${i}`" class="ice-crystal" :style="{ '--pos': i }"></div>
+        <div
+          v-for="i in 8"
+          :key="`crystal-s-${i}`"
+          class="ice-crystal"
+          :style="{ '--pos': i }"
+        ></div>
       </div>
 
       <div class="book-container">
         <!-- Botones navegación -->
-        <button class="spectator-nav prev" @click="canviarJugadorObservat('anterior')" aria-label="Anterior"></button>
-        <button class="spectator-nav next" @click="canviarJugadorObservat('seguent')" aria-label="Següent"></button>
+        <button
+          class="spectator-nav prev"
+          @click="canviarJugadorObservat('anterior')"
+          aria-label="Anterior"
+        ></button>
+        <button
+          class="spectator-nav next"
+          @click="canviarJugadorObservat('seguent')"
+          aria-label="Següent"
+        ></button>
 
         <div class="book-page book-left-page">
           <div class="mage-info">
-            <h1 class="mage-title" v-if="nomJugadorObservat">Estàs observant a: {{ nomJugadorObservat }}</h1>
+            <h1 class="mage-title" v-if="nomJugadorObservat">
+              Estàs observant a: {{ nomJugadorObservat }}
+            </h1>
           </div>
         </div>
         <div class="book-page book-right-page">
@@ -236,7 +271,9 @@
                 activa: wordIndex === estatJugadorObservat.indexParaulaActiva,
               }"
             >
-              <template v-if="wordIndex === estatJugadorObservat.indexParaulaActiva && paraula.text">
+              <template
+                v-if="wordIndex === estatJugadorObservat.indexParaulaActiva && paraula.text"
+              >
                 <span
                   v-for="(lletra, letterIndex) in paraula.text.split('')"
                   :key="letterIndex"
@@ -265,7 +302,7 @@ import DarkSpellAnimation from './DarkSpellAnimation.vue'
 import JungleSpellAnimation from './JungleSpellAnimation.vue'
 import WaterSpellAnimation from './WaterSpellAnimation.vue'
 
-// 🎨 COMPUTED THEME
+//  COMPUTED THEME
 // En espectador, prenem el mag del jugador observat
 const observedMageName = computed(() => {
   if (!isSpectator.value) return props.jugador?.mage?.name?.toLowerCase?.()
@@ -304,7 +341,7 @@ const gameTheme = computed(() => {
   return 'theme-default'
 })
 
-// 🧩 PROPS
+//  PROPS
 const props = defineProps({
   socket: { type: Object, required: true },
   jugador: { type: Object, required: true },
@@ -314,7 +351,7 @@ const props = defineProps({
   spellCategory: { type: String, required: false, default: '' },
 })
 
-// ⚙️ ESTATS PRINCIPALS
+//  ESTATS PRINCIPALS
 const estatDelJoc = reactive({
   paraules: [],
   indexParaulaActiva: 0,
@@ -375,7 +412,7 @@ const nomJugadorObservat = computed(() => {
   return jugadorObservat ? jugadorObservat.name : 'Cap jugador'
 })
 
-// 📢 NOTIFICACIONS
+//  NOTIFICACIONS
 function showNotification(message, duration = 3000) {
   notification.value = message
   setTimeout(() => {
@@ -383,7 +420,7 @@ function showNotification(message, duration = 3000) {
   }, duration)
 }
 
-// 🧠 FUNCIONS DE CONTROL DEL JOC
+//  FUNCIONS DE CONTROL DEL JOC
 function initializeActiveWord() {
   paraulaActiva.value =
     estatDelJoc.paraules && estatDelJoc.paraules.length > 0 ? estatDelJoc.paraules[0] : null
@@ -479,7 +516,7 @@ function getSpectatorClasseLletra(indexLletra, paraulaSencera) {
   return lletraIntroduida === lletraEsperada ? 'lletra-correcta' : 'lletra-incorrecta'
 }
 
-// 🧩 UTILITARIS
+//  UTILITARIS
 function getTexteParaulaActiva() {
   if (!paraulaActiva.value) return ''
 
@@ -538,7 +575,7 @@ function getDisplayLetter(lletra, index) {
   return lletra
 }
 
-// 🛰️ ESTAT DEL JUGADOR
+//  ESTAT DEL JUGADOR
 function playerGameStatus() {
   props.socket.emit('playerGameStatus', {
     roomName: props.roomName,
@@ -551,7 +588,7 @@ function playerGameStatus() {
   })
 }
 
-// ⚡ POWER-UP
+//  POWER-UP
 function usePowerUp() {
   if (!powerUpState.ready || powerUpState.used) return
   // No actualitzem l'estat aquí, esperem la confirmació del servidor
@@ -561,7 +598,7 @@ function usePowerUp() {
   })
 }
 
-// 👁️ CONTROL D'ESPECTADOR
+//  CONTROL D'ESPECTADOR
 function canviarJugadorObservat(direccio) {
   const llista = jugadorsReals.value
   if (!llista.length) return
@@ -623,7 +660,7 @@ props.socket.on('spectatorGameView', (gameStats) => {
 })
 
 props.socket.on('powerUpReady', (mage) => {
-  showNotification('🔥 Power-up a punt! 🔥')
+  showNotification(' Power-up a punt! ')
   powerUpState.ready = true
   powerUpState.name = mage.powerUp
   powerUpState.wordIndex = estatDelJoc.indexParaulaActiva
@@ -732,7 +769,7 @@ props.socket.on('debuffEnded', () => {
 })
 
 props.socket.on('tsunamiHit', () => {
-  showNotification('🌊 TSUNAMI! Has de tornar a començar la frase.')
+  showNotification('TSUNAMI! Has de tornar a començar la frase.')
   showWaterSpellAnimation.value = true
   setTimeout(() => {
     showWaterSpellAnimation.value = false
@@ -2230,7 +2267,9 @@ props.socket.on('tsunamiHit', () => {
 
 /* CASTER ANIMATION */
 #game-engine.casting-fire-spell .book-container::before {
-  animation: burning-edge 1s ease-in-out infinite, intense-glow 1s ease-in-out infinite;
+  animation:
+    burning-edge 1s ease-in-out infinite,
+    intense-glow 1s ease-in-out infinite;
 }
 
 #game-engine.casting-ice-spell .book-container {
@@ -2327,14 +2366,22 @@ props.socket.on('tsunamiHit', () => {
   border: none;
   cursor: pointer;
   background:
-    radial-gradient(circle at 35% 30%, rgba(255,255,255,0.95), rgba(210,210,240,0.9) 60%, rgba(80,70,140,0.9)),
-    linear-gradient(145deg, rgba(255,255,255,0.7), rgba(120,110,180,0.2));
+    radial-gradient(
+      circle at 35% 30%,
+      rgba(255, 255, 255, 0.95),
+      rgba(210, 210, 240, 0.9) 60%,
+      rgba(80, 70, 140, 0.9)
+    ),
+    linear-gradient(145deg, rgba(255, 255, 255, 0.7), rgba(120, 110, 180, 0.2));
   box-shadow:
-    inset 0 2px 6px rgba(255,255,255,0.8),
-    inset 0 -4px 10px rgba(80,70,140,0.35),
-    0 6px 16px rgba(0,0,0,0.35),
-    0 0 18px rgba(150,100,255,0.5);
-  transition: transform 0.15s ease, box-shadow 0.2s ease, filter 0.2s ease;
+    inset 0 2px 6px rgba(255, 255, 255, 0.8),
+    inset 0 -4px 10px rgba(80, 70, 140, 0.35),
+    0 6px 16px rgba(0, 0, 0, 0.35),
+    0 0 18px rgba(150, 100, 255, 0.5);
+  transition:
+    transform 0.15s ease,
+    box-shadow 0.2s ease,
+    filter 0.2s ease;
 }
 .spectator-nav::after {
   content: '';
@@ -2347,7 +2394,7 @@ props.socket.on('tsunamiHit', () => {
   border-top: 10px solid transparent;
   border-bottom: 10px solid transparent;
   border-left: 16px solid #2f2a63; /* triángulo “play” */
-  filter: drop-shadow(0 0 4px rgba(50,40,110,0.5));
+  filter: drop-shadow(0 0 4px rgba(50, 40, 110, 0.5));
 }
 .spectator-nav.prev {
   left: -22px;
@@ -2361,10 +2408,10 @@ props.socket.on('tsunamiHit', () => {
 .spectator-nav:hover {
   transform: translateY(-50%) scale(1.06);
   box-shadow:
-    inset 0 3px 8px rgba(255,255,255,0.9),
-    inset 0 -5px 12px rgba(80,70,140,0.45),
-    0 10px 22px rgba(0,0,0,0.45),
-    0 0 28px rgba(170,120,255,0.7);
+    inset 0 3px 8px rgba(255, 255, 255, 0.9),
+    inset 0 -5px 12px rgba(80, 70, 140, 0.45),
+    0 10px 22px rgba(0, 0, 0, 0.45),
+    0 0 28px rgba(170, 120, 255, 0.7);
   filter: brightness(1.03);
 }
 </style>
