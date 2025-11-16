@@ -1,9 +1,8 @@
 <template>
   <div class="main-content">
     <div v-if="accessCodeToDisplay" class="access-code-box">
-      Sala Privada | Codi d'accés:
+      Portal Privat | Clau Arcana:
       <strong>{{ accessCodeToDisplay }}</strong>
-      <p>Comparteix aquest codi perquè altres s'uneixen.</p>
     </div>
 
     <playerList

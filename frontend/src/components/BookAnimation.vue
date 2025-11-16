@@ -21,15 +21,15 @@
         <!-- Portada -->
         <div class="book-cover front">
           <div class="cover-content">
-            <h1>El Gran Grimorio</h1>
-            <p>Type Racer Royale</p>
+            <h1>El Gran Grimori</h1>
+            <p>MagicTypeRoyale</p>
           </div>
         </div>
 
         <!-- Contraportada -->
         <div class="book-cover back">
           <div class="cover-content">
-            <p>Desafía tu magia</p>
+            <p>Desafia la teva màgia</p>
           </div>
         </div>
       </div>

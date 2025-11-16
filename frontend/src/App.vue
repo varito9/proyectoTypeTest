@@ -26,8 +26,16 @@
       />
       <img class="mago mago-obscuro" src="/img/MagoObscuro-removebg-preview.png" alt="Mag Obscur" />
       <img class="mago mago-tierra" src="/img/MagoTierra-removebg-preview.png" alt="Mag de Terra" />
-      <!-- <img class="mago mago-hielo" src="/img/MagoHielo.png" alt="Mag de Hielo" /> -->
-      <!-- <img class="mago mago-agua" src="/img/MagoAgua.png" alt="Mag de Agua" /> -->
+      <!-- <img
+        class="mago mago-hielo"
+        src="/img/MagoHielo.png"
+        alt="Mag de Hielo"
+      />
+      <img
+        class="mago mago-agua"
+        src="/img/MagoAgua.png"
+        alt="Mag de Agua"
+      /> -->
 
       <h1 class="epic-title">MagicTypeRoyale</h1>
 
@@ -349,8 +357,8 @@ function sendNickname(nickname) {
     showNotification("Has d'introduir un nom", 'error')
     return
   }
-  if (trimmedName.length > 20) {
-    showNotification('El nom no pot tenir més de 20 caràcters', 'error')
+  if (trimmedName.length > 15) {
+    showNotification('El nom no pot tenir més de 15 caràcters', 'error')
     return
   }
   // Generar un ID únic per al jugador abans de connectar
@@ -403,8 +411,8 @@ function createRoom() {
     showNotification('El portal ha de tenir un nom', 'error')
     return
   }
-  if (name.length > 25) {
-    showNotification('El nom del portal no pot tenir més de 25 caràcters', 'error')
+  if (name.length > 15) {
+    showNotification('El nom del portal no pot tenir més de 15 caràcters', 'error')
     return
   }
   isPortalActive.value = true
@@ -435,6 +443,7 @@ function resetToRoomList() {
   vista.value = 'preGame'
   jugadors.value = []
   roomState.value = null
+  jugador.value.role = 'player'
   loadRooms()
 }
 
@@ -549,7 +558,7 @@ hr {
   right: 0;
   transform: rotate(15deg) scaleX(-1); /* Flipped to face inwards */
 }
-.mago-hielo {
+/* .mago-hielo {
   top: 0;
   left: 50%;
   transform: translateX(-50%);
@@ -560,7 +569,7 @@ hr {
   left: 50%;
   transform: translateX(-50%);
   width: 30%;
-}
+} */
 
 .login-form {
   display: flex;
@@ -1429,7 +1438,7 @@ hr {
   background: rgba(15, 12, 30, 0.65);
   border: 1px solid rgba(136, 114, 255, 0.35);
   border-radius: 22px;
-  padding: 28px;
+  padding: 0;
   box-shadow: 0 20px 48px rgba(0, 0, 0, 0.35);
   overflow: hidden;
   display: flex;
@@ -1443,19 +1452,10 @@ hr {
   gap: 20px;
 }
 
-.game-timer,
-.game-ranking {
-  background: rgba(15, 12, 30, 0.65);
-  border: 1px solid rgba(136, 114, 255, 0.35);
-  border-radius: 22px;
-  padding: 18px 22px;
-  box-shadow: 0 20px 48px rgba(0, 0, 0, 0.35);
-  flex: 1;
-  overflow: hidden;
-}
-
 .game-timer {
   flex: 0 0 auto;
+  display: flex;
+  justify-content: center; /* centra horitzontalment el títol del temps */
 }
 
 .lobby-header {
@@ -2322,10 +2322,6 @@ hr {
   align-self: center;
 }
 
-.actions-container .badge {
-  background: none;
-}
-
 .action-card {
   flex: 1; /* Cada tarjeta ocupa 50% */
   display: flex;
@@ -2533,17 +2529,6 @@ hr {
 }
 
 .notification.error {
-  position: fixed;
-  bottom: 27rem;
-  left: 52rem;
-  padding: 15px 25px;
-  border-radius: 8px;
-  color: #ffffff;
-  z-index: 1000;
-  font-weight: 500;
-  font-size: 1.1rem;
-  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.4);
-  transition: all 0.3s ease-out;
   background: linear-gradient(to right, #ff0202 0%, hsl(337, 100%, 71%) 100%);
 }
 
