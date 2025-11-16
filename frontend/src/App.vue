@@ -18,26 +18,14 @@
         <div class="particle-layer-login particle-layer-login-5"></div>
       </div>
 
-      <img
-        class="mago mago-fuego"
-        src="/img/MagoFuego-removebg-preview.png"
-        alt="Mag de foc"
-      />
+      <img class="mago mago-fuego" src="/img/MagoFuego-removebg-preview.png" alt="Mag de foc" />
       <img
         class="mago mago-angelical"
         src="/img/MagoAngelical-removebg-preview.png"
         alt="Mag Angelical"
       />
-      <img
-        class="mago mago-obscuro"
-        src="/img/MagoObscuro-removebg-preview.png"
-        alt="Mag Obscur"
-      />
-      <img
-        class="mago mago-tierra"
-        src="/img/MagoTierra-removebg-preview.png"
-        alt="Mag de Terra"
-      />
+      <img class="mago mago-obscuro" src="/img/MagoObscuro-removebg-preview.png" alt="Mag Obscur" />
+      <img class="mago mago-tierra" src="/img/MagoTierra-removebg-preview.png" alt="Mag de Terra" />
       <!-- <img
         class="mago mago-hielo"
         src="/img/MagoHielo.png"
@@ -61,9 +49,7 @@
           @keydown.enter="sendNickname(jugador.name)"
         />
 
-        <button class="login-button" @click="sendNickname(jugador.name)">
-          Entra a la Batalla
-        </button>
+        <button class="login-button" @click="sendNickname(jugador.name)">Entra a la Batalla</button>
       </div>
     </div>
   </div>
@@ -363,8 +349,8 @@ function sendNickname(nickname) {
     showNotification("Has d'introduir un nom", 'error')
     return
   }
-  if (trimmedName.length > 20) {
-    showNotification('El nom no pot tenir més de 20 caràcters', 'error')
+  if (trimmedName.length > 15) {
+    showNotification('El nom no pot tenir més de 15 caràcters', 'error')
     return
   }
   // Generar un ID únic per al jugador abans de connectar
@@ -415,8 +401,8 @@ function createRoom() {
     showNotification('El portal ha de tenir un nom', 'error')
     return
   }
-  if (name.length > 25) {
-    showNotification('El nom del portal no pot tenir més de 25 caràcters', 'error')
+  if (name.length > 15) {
+    showNotification('El nom del portal no pot tenir més de 15 caràcters', 'error')
     return
   }
   isPortalActive.value = true
@@ -523,7 +509,14 @@ hr {
   font-size: 5rem;
   font-weight: 700;
   color: #fff;
-  text-shadow: 0 0 10px #fff, 0 0 20px #fff, 0 0 30px #ff00ff, 0 0 40px #ff00ff, 0 0 50px #ff00ff, 0 0 60px #ff00ff, 0 0 70px #ff00ff;
+  text-shadow:
+    0 0 10px #fff,
+    0 0 20px #fff,
+    0 0 30px #ff00ff,
+    0 0 40px #ff00ff,
+    0 0 50px #ff00ff,
+    0 0 60px #ff00ff,
+    0 0 70px #ff00ff;
   margin-bottom: 2rem;
   animation: flicker 1.5s infinite alternate;
   z-index: 3;
@@ -618,7 +611,13 @@ hr {
 }
 
 @keyframes flicker {
-  0%, 18%, 22%, 25%, 53%, 57%, 100% {
+  0%,
+  18%,
+  22%,
+  25%,
+  53%,
+  57%,
+  100% {
     text-shadow:
       0 0 10px #fff,
       0 0 20px #fff,
@@ -628,7 +627,9 @@ hr {
       0 0 60px #ff00ff,
       0 0 70px #ff00ff;
   }
-  20%, 24%, 55% {
+  20%,
+  24%,
+  55% {
     text-shadow: none;
   }
 }
