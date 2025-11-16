@@ -20,7 +20,7 @@
     <table>
       <thead>
         <tr>
-          <th>Posició</th>
+          <th>MAG</th>
           <th>Jugadors</th>
           <th>Errors</th>
           <th>Encerts</th>
@@ -29,7 +29,11 @@
       <tbody>
         <tr v-for="(player, index) in llistatJugadors" :key="player.id">
           <td class="rank-cell">
-            <span>{{ getRankContent(index) }}</span>
+            <img
+              class="mage-avatar"
+              :src="getMageImage(player)"
+              alt="Mag"
+            />
           </td>
           <td class="rank-cell">{{ player.name }}</td>
           <td>{{ player.errors }}</td>
@@ -63,17 +67,42 @@ const llistatJugadors = computed(() => {
   )
 })
 
-const getRankContent = (index) => {
-  const pos = index + 1
-  if (pos === 1) return '1'
-  if (pos === 2) return '2'
-  if (pos === 3) return '3'
-  if (pos === 4) return '4'
-  if (pos === 5) return '5'
-  if (pos === 6) return '6'
+//Funció que retorna la imatge del mag segons el nom del mag assinat
+const getMageImage = (player) => {
+  //Declarem el avatar per defecte 
+  const defaultAvatar = '/img/Aprendiz_Mago.png'
+  if (!player || !player.mage || !player.mage.name) return defaultAvatar
 
-  return pos
+  //Guardem el nom del mag en minuscules en una constant
+  const mageName = String(player.mage.name).toLowerCase()
+
+  if (mageName.includes('foc')){
+    return '/img/magosPartida/MagoFuego.jpg'
+  }
+  if (mageName.includes('aigua')) {
+    return '/img/magosPartida/MagoAgua.jpg'
+  }
+  if (
+    mageName.includes('jungla')
+  ) {
+    return '/img/magosPartida/MagoTierra.jpg'
+  }
+  if (mageName.includes('llum')) {
+    return '/img/magosPartida/MagoAngelical.jpg'
+  }
+  if (
+    mageName.includes('oscur')
+  ) {
+    return '/img/magosPartida/MagoObscuro.jpg'
+  }
+  if (mageName.includes('gel')) {
+    return '/img/magosPartida/MagoHielo.jpg'
+  }
+
+  return defaultAvatar
 }
+
+
 
 const particleCount = 40
 const colors = ['#00f2ff', '#ffd700', '#c0c0c0', '#f0f0f0'] //
@@ -204,11 +233,18 @@ tbody tr:hover {
 
 /* Cel·la de posició (números/emojis) */
 .rank-cell {
-  font-size: 1.3em;
-  font-weight: bold;
   vertical-align: middle;
   text-align: center;
-  width: 100px; /* Amplada fixa per a la columna de posició */
+  width: 150px; /* Amplada més gran perquè la taula ocupi més llargada */
+}
+
+/* Avatar petit del mag a la taula de rànquing */
+.mage-avatar {
+  width: 64px;
+  height: 64px;
+  border-radius: 8px;
+  object-fit: cover;
+  box-shadow: 0 0 6px rgba(255, 255, 255, 0.25);
 }
 
 /* --- 7. AJUSTAR 'NTH-CHILD' PERQUÈ COINCIDEIXIN AMB LES NOVES COLUMNES --- */

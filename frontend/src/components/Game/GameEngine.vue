@@ -189,41 +189,68 @@
         placeholder="Escriu aquí..."
         class="inputJoc"
         autofocus
+        tabindex="0"
         :disabled="acabada"
       />
     </div>
 
     <div id="spectator" v-else>
-      <h4 class="spectator-name" v-if="nomJugadorObservat">
-        Estàs observant a: <strong>{{ nomJugadorObservat }}</strong>
-      </h4>
-      <button @click="canviarJugadorObservat('anterior')">◀ Enrere</button>
-      <button @click="canviarJugadorObservat('seguent')">Endavant ▶</button>
+      <!-- Decoraciones por tema alrededor del libro -->
+      <div v-if="gameTheme === 'theme-water'" class="book-decoration water-drops">
+        <div v-for="i in 8" :key="`drop-s-${i}`" class="water-drop" :style="{ '--pos': i }"></div>
+      </div>
+      <div v-if="gameTheme === 'theme-earth'" class="book-decoration jungle-vines">
+        <div v-for="i in 6" :key="`vine-dec-s-${i}`" class="vine-decoration" :style="{ '--side': i % 2 }"></div>
+      </div>
+      <div v-if="gameTheme === 'theme-light'" class="book-decoration light-sparkles">
+        <div v-for="i in 12" :key="`sparkle-s-${i}`" class="sparkle" :style="{ '--angle': i * 30 + 'deg' }"></div>
+      </div>
+      <div v-if="gameTheme === 'theme-fire'" class="book-decoration fire-flames">
+        <div v-for="i in 4" :key="`flame-s-${i}`" class="flame-decoration" :style="{ '--side': i }"></div>
+      </div>
+      <div v-if="gameTheme === 'theme-dark'" class="book-decoration dark-mist">
+        <div v-for="i in 6" :key="`mist-s-${i}`" class="mist-decoration" :style="{ '--layer': i }"></div>
+      </div>
+      <div v-if="gameTheme === 'theme-ice'" class="book-decoration ice-crystals">
+        <div v-for="i in 8" :key="`crystal-s-${i}`" class="ice-crystal" :style="{ '--pos': i }"></div>
+      </div>
 
-      <div class="paraules">
-        <span
-          v-for="(paraula, wordIndex) in estatJugadorObservat.paraules"
-          :key="wordIndex"
-          class="paraula"
-          :class="{
-            completada: paraula.estat === 'completada',
-            actual: wordIndex === estatJugadorObservat.indexParaulaActiva,
-          }"
-        >
-          <template v-if="wordIndex === estatJugadorObservat.indexParaulaActiva && paraula.text">
+      <div class="book-container">
+        <!-- Botones navegación -->
+        <button class="spectator-nav prev" @click="canviarJugadorObservat('anterior')" aria-label="Anterior"></button>
+        <button class="spectator-nav next" @click="canviarJugadorObservat('seguent')" aria-label="Següent"></button>
+
+        <div class="book-page book-left-page">
+          <div class="mage-info">
+            <h1 class="mage-title" v-if="nomJugadorObservat">Estàs observant a: {{ nomJugadorObservat }}</h1>
+          </div>
+        </div>
+        <div class="book-page book-right-page">
+          <div class="paraules">
             <span
-              v-for="(lletra, letterIndex) in paraula.text.split('')"
-              :key="letterIndex"
-              :class="getSpectatorClasseLletra(letterIndex, paraula.text)"
+              v-for="(paraula, wordIndex) in estatJugadorObservat.paraules"
+              :key="wordIndex"
+              class="paraula"
+              :class="{
+                completada: paraula.estat === 'completada',
+                activa: wordIndex === estatJugadorObservat.indexParaulaActiva,
+              }"
             >
-              {{ lletra }}
+              <template v-if="wordIndex === estatJugadorObservat.indexParaulaActiva && paraula.text">
+                <span
+                  v-for="(lletra, letterIndex) in paraula.text.split('')"
+                  :key="letterIndex"
+                  :class="getSpectatorClasseLletra(letterIndex, paraula.text)"
+                >
+                  {{ lletra }}
+                </span>
+              </template>
+              <template v-else>
+                {{ paraula.text }}
+              </template>
             </span>
-          </template>
-
-          <template v-else>
-            {{ paraula.text }}
-          </template>
-        </span>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -239,11 +266,20 @@ import JungleSpellAnimation from './JungleSpellAnimation.vue'
 import WaterSpellAnimation from './WaterSpellAnimation.vue'
 
 // 🎨 COMPUTED THEME
+// En espectador, prenem el mag del jugador observat
+const observedMageName = computed(() => {
+  if (!isSpectator.value) return props.jugador?.mage?.name?.toLowerCase?.()
+  const jugadorObs = jugadorsReals.value.find((p) => p.id === idJugadorObservat.value)
+  return jugadorObs && jugadorObs.mage && jugadorObs.mage.name
+    ? jugadorObs.mage.name.toLowerCase()
+    : ''
+})
+
 const gameTheme = computed(() => {
-  if (!props.jugador || !props.jugador.mage) {
+  const mageName = observedMageName.value
+  if (!mageName) {
     return 'theme-default'
   }
-  const mageName = props.jugador.mage.name.toLowerCase()
   if (mageName.includes('foc')) {
     return 'theme-fire'
   } else if (mageName.includes('aigua')) {
@@ -767,6 +803,16 @@ props.socket.on('tsunamiHit', () => {
   z-index: 2; /* Per sobre dels efectes de fons */
 }
 
+#spectator {
+  display: flex;
+  flex-direction: column;
+  align-items: center; /* Centra el llibre */
+  justify-content: center; /* Centra el llibre */
+  flex: 1;
+  width: 100%;
+  z-index: 2; /* Per sobre dels efectes de fons */
+}
+
 .inputJoc {
   font-size: 1.5rem;
   padding: 15px;
@@ -810,6 +856,33 @@ props.socket.on('tsunamiHit', () => {
   background-size: cover;
   background-position: center;
   transition: color 0.5s ease;
+}
+
+/* --- SCROLLBAR (base) --- */
+.book-page::-webkit-scrollbar {
+  width: 12px;
+}
+.book-page::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.35);
+  border-radius: 8px;
+  box-shadow: inset 0 0 6px rgba(0, 0, 0, 0.12);
+}
+.book-page::-webkit-scrollbar-thumb {
+  border-radius: 8px;
+  border: 2px solid rgba(255, 255, 255, 0.6);
+  background-clip: padding-box;
+  background: linear-gradient(135deg, #bdbdbd, #9e9e9e);
+  box-shadow:
+    inset 0 0 8px rgba(255, 255, 255, 0.5),
+    0 0 8px rgba(0, 0, 0, 0.15);
+}
+.book-page::-webkit-scrollbar-thumb:hover {
+  filter: brightness(1.15);
+}
+/* Firefox */
+.theme-default .book-page {
+  scrollbar-width: thin;
+  scrollbar-color: #9e9e9e rgba(255, 255, 255, 0.35);
 }
 
 .book-left-page {
@@ -924,6 +997,17 @@ props.socket.on('tsunamiHit', () => {
   background: linear-gradient(135deg, #fff3e0 0%, #ffe0b2 100%);
   color: #5d1e01;
   box-shadow: inset 0 0 30px rgba(255, 140, 0, 0.15);
+}
+.theme-fire .book-page::-webkit-scrollbar-thumb {
+  background: linear-gradient(135deg, #ffb74d, #ff8c00);
+  border-color: rgba(255, 240, 220, 0.9);
+}
+.theme-fire .book-page::-webkit-scrollbar-track {
+  background: rgba(255, 140, 0, 0.18);
+}
+.theme-fire .book-page {
+  scrollbar-width: thin;
+  scrollbar-color: #ff8c00 rgba(255, 140, 0, 0.18);
 }
 .theme-fire .book-left-page {
   background-image: linear-gradient(135deg, #ffebee 0%, #ffccbc 100%);
@@ -1079,6 +1163,17 @@ props.socket.on('tsunamiHit', () => {
   color: #004d7a;
   box-shadow: inset 0 0 30px rgba(3, 169, 244, 0.1);
 }
+.theme-water .book-page::-webkit-scrollbar-thumb {
+  background: linear-gradient(135deg, #64b5f6, #03a9f4);
+  border-color: rgba(224, 247, 255, 0.9);
+}
+.theme-water .book-page::-webkit-scrollbar-track {
+  background: rgba(3, 169, 244, 0.18);
+}
+.theme-water .book-page {
+  scrollbar-width: thin;
+  scrollbar-color: #03a9f4 rgba(3, 169, 244, 0.18);
+}
 .theme-water .book-left-page {
   background-image: linear-gradient(135deg, #e1f5fe 0%, #b3e5fc 100%);
 }
@@ -1174,6 +1269,17 @@ props.socket.on('tsunamiHit', () => {
   color: #1b5e20;
   box-shadow: inset 0 0 40px rgba(76, 175, 80, 0.15);
   border: 2px solid rgba(76, 175, 80, 0.3);
+}
+.theme-earth .book-page::-webkit-scrollbar-thumb {
+  background: linear-gradient(135deg, #81c784, #4caf50);
+  border-color: rgba(232, 245, 233, 0.95);
+}
+.theme-earth .book-page::-webkit-scrollbar-track {
+  background: rgba(76, 175, 80, 0.18);
+}
+.theme-earth .book-page {
+  scrollbar-width: thin;
+  scrollbar-color: #4caf50 rgba(76, 175, 80, 0.18);
 }
 .theme-earth .book-left-page {
   background: linear-gradient(135deg, #f1f8e9 0%, #dcedc8 100%);
@@ -1284,6 +1390,17 @@ props.socket.on('tsunamiHit', () => {
   box-shadow: inset 0 0 30px rgba(255, 215, 0, 0.1);
   border: 2px solid rgba(255, 215, 0, 0.25);
 }
+.theme-light .book-page::-webkit-scrollbar-thumb {
+  background: linear-gradient(135deg, #ffe082, #ffd54f, #ffd700);
+  border-color: rgba(255, 255, 240, 0.95);
+}
+.theme-light .book-page::-webkit-scrollbar-track {
+  background: rgba(255, 215, 0, 0.22);
+}
+.theme-light .book-page {
+  scrollbar-width: thin;
+  scrollbar-color: #ffd54f rgba(255, 215, 0, 0.22);
+}
 .theme-light .book-left-page {
   background: linear-gradient(135deg, #ffffff 0%, #fffef5 100%);
 }
@@ -1388,6 +1505,17 @@ props.socket.on('tsunamiHit', () => {
   color: #2a2a5a;
   box-shadow: inset 0 0 40px rgba(100, 50, 200, 0.12);
   border: 2px solid rgba(100, 50, 200, 0.25);
+}
+.theme-dark .book-page::-webkit-scrollbar-thumb {
+  background: linear-gradient(135deg, #b39ddb, #8e44ad);
+  border-color: rgba(245, 238, 255, 0.95);
+}
+.theme-dark .book-page::-webkit-scrollbar-track {
+  background: rgba(150, 100, 200, 0.22);
+}
+.theme-dark .book-page {
+  scrollbar-width: thin;
+  scrollbar-color: #8e44ad rgba(150, 100, 200, 0.22);
 }
 .theme-dark .book-left-page {
   background: linear-gradient(135deg, #f0e8f8 0%, #e8e0f5 100%);
@@ -1504,6 +1632,17 @@ props.socket.on('tsunamiHit', () => {
   box-shadow:
     inset 0 0 30px rgba(100, 200, 255, 0.2),
     inset 0 0 60px rgba(200, 230, 245, 0.1);
+}
+.theme-ice .book-page::-webkit-scrollbar-thumb {
+  background: linear-gradient(135deg, #a5d6ff, #64b5f6);
+  border-color: rgba(235, 248, 255, 0.95);
+}
+.theme-ice .book-page::-webkit-scrollbar-track {
+  background: rgba(144, 202, 249, 0.22);
+}
+.theme-ice .book-page {
+  scrollbar-width: thin;
+  scrollbar-color: #64b5f6 rgba(144, 202, 249, 0.22);
 }
 .theme-ice .book-left-page {
   background-image: linear-gradient(135deg, #e1f5fe 0%, #b3e5fc 100%);
@@ -2174,5 +2313,58 @@ props.socket.on('tsunamiHit', () => {
 }
 .spectator-name strong {
   color: #ffc107;
+}
+
+/* --- Flechas estilo “play” circulares --- */
+.spectator-nav {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 5;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  border: none;
+  cursor: pointer;
+  background:
+    radial-gradient(circle at 35% 30%, rgba(255,255,255,0.95), rgba(210,210,240,0.9) 60%, rgba(80,70,140,0.9)),
+    linear-gradient(145deg, rgba(255,255,255,0.7), rgba(120,110,180,0.2));
+  box-shadow:
+    inset 0 2px 6px rgba(255,255,255,0.8),
+    inset 0 -4px 10px rgba(80,70,140,0.35),
+    0 6px 16px rgba(0,0,0,0.35),
+    0 0 18px rgba(150,100,255,0.5);
+  transition: transform 0.15s ease, box-shadow 0.2s ease, filter 0.2s ease;
+}
+.spectator-nav::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-45%, -50%);
+  width: 0;
+  height: 0;
+  border-top: 10px solid transparent;
+  border-bottom: 10px solid transparent;
+  border-left: 16px solid #2f2a63; /* triángulo “play” */
+  filter: drop-shadow(0 0 4px rgba(50,40,110,0.5));
+}
+.spectator-nav.prev {
+  left: -22px;
+}
+.spectator-nav.prev::after {
+  transform: translate(-55%, -50%) scaleX(-1); /* flecha a la izquierda */
+}
+.spectator-nav.next {
+  right: -22px;
+}
+.spectator-nav:hover {
+  transform: translateY(-50%) scale(1.06);
+  box-shadow:
+    inset 0 3px 8px rgba(255,255,255,0.9),
+    inset 0 -5px 12px rgba(80,70,140,0.45),
+    0 10px 22px rgba(0,0,0,0.45),
+    0 0 28px rgba(170,120,255,0.7);
+  filter: brightness(1.03);
 }
 </style>
