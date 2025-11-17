@@ -36,8 +36,6 @@ const dbConfig = {
 
 let dbConnection;
 
-
-
 /**
  * Función para crear la tabla si no existe y poblar con datos usando prepared statements.
  */
@@ -175,8 +173,8 @@ async function getRandomSpellText(category, limit = null) {
     // 2. Elegir un conjuro (titol/mag) aleatorio
     const randomTitleIndex = Math.floor(Math.random() * titles.length);
     const { titol, mag: rawMag } = titles[randomTitleIndex];
-    const mag = parseInt(rawMag, 10); // Explicitly cast to integer
-    if (isNaN(mag)) {
+    const mag = Number.parseInt(rawMag, 10); // Explicitly cast to integer
+    if (Number.isNaN(mag)) {
       console.error(
         `[ERROR] 'mag' is NaN for category: ${category}, titol: ${titol}, rawMag: ${rawMag}`
       );
@@ -188,8 +186,8 @@ async function getRandomSpellText(category, limit = null) {
     const params = [category, titol, mag];
 
     if (limit) {
-      const numericLimit = parseInt(limit, 10); // Explicitly cast to integer
-      if (isNaN(numericLimit)) {
+      const numericLimit = Number.parseInt(limit, 10); // Explicitly cast to integer
+      if (Number.isNaN(numericLimit)) {
         console.error(
           `[ERROR] 'limit' is NaN for category: ${category}, titol: ${titol}, limit: ${limit}`
         );
@@ -618,16 +616,17 @@ io.on("connection", (socket) => {
         !spellLines || spellLines.length === 0
           ? [{ text: "el text no ha carregat correctament.", estat: "pendent" }]
           : spellLines.map((line) => ({
-            text: line.toLowerCase(),
-            estat: "pendent",
-          }));
+              text: line.toLowerCase(),
+              estat: "pendent",
+            }));
 
       console.log(
         `[startGame] Player ${player.name} (${player.id}) assigned mage category: ${player.mage.category}`
       );
       if (spellTextForPlayer.length > 0) {
         console.log(
-          `[startGame] Player ${player.name
+          `[startGame] Player ${
+            player.name
           } received spell text snippet: "${spellTextForPlayer[0].text.substring(
             0,
             50
@@ -650,7 +649,8 @@ io.on("connection", (socket) => {
       );
       console.log(`[DEBUG]   Category: ${player.mage.category}`);
       console.log(
-        `[DEBUG]   Spell Text (first line): ${spellTextForPlayer.length > 0 ? spellTextForPlayer[0].text : "N/A"
+        `[DEBUG]   Spell Text (first line): ${
+          spellTextForPlayer.length > 0 ? spellTextForPlayer[0].text : "N/A"
         }`
       );
 
