@@ -31,7 +31,7 @@ Per saber com configurar i executar el projecte al teu ordinador, o per entendre
 
 * **[Guia d'Instal·lació Local](./GUIA_INSTALACIO.md)**
     * *(Aquí s'explica com tenir el projecte al teu ordinador).*
-* **[Documentació Tècnica del Projecte](https://url-de-la-teva-documentacio.com)**
+* [![Documentació Tècnica del Projecte](https://deepwiki.com/badge.svg)](https://deepwiki.com/inspedralbes/tr1-type-racer-royale-tr1-grup-5)
     * *(Aquí va l'enllaç a la documentació oficial, per exemple, a GitHub Pages, Read the Docs, etc.).*
 
 ---
