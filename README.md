@@ -29,10 +29,9 @@ Si els errors de paraules d'un jugador arriba a un límit màxim, queda eliminat
 
 Per saber com configurar i executar el projecte al teu ordinador, o per entendre'n l'arquitectura, consulta els següents enllaços:
 
-* **[Guia d'Instal·lació Local](./GUIA_INSTALACIO.md)**
-    * *(Aquí s'explica com tenir el projecte al teu ordinador).*
+* **[Guia d'Instal·lació Local](https://github.com/inspedralbes/tr1-type-racer-royale-tr1-grup-5/blob/main/doc/README.md)**
+
 * [![Documentació Tècnica del Projecte](https://deepwiki.com/badge.svg)](https://deepwiki.com/inspedralbes/tr1-type-racer-royale-tr1-grup-5)
-    * *(Aquí va l'enllaç a la documentació oficial, per exemple, a GitHub Pages, Read the Docs, etc.).*
 
 ---
 
