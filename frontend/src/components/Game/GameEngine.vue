@@ -907,8 +907,8 @@ props.socket.on('tsunamiHit', () => {
 .book-page::-webkit-scrollbar-thumb {
   border-radius: 8px;
   border: 2px solid rgba(255, 255, 255, 0.6);
-  background-clip: padding-box;
   background: linear-gradient(135deg, #bdbdbd, #9e9e9e);
+  background-clip: padding-box;
   box-shadow:
     inset 0 0 8px rgba(255, 255, 255, 0.5),
     0 0 8px rgba(0, 0, 0, 0.15);
